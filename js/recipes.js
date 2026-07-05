@@ -589,6 +589,7 @@ function generateWeeklyMealPlan(availableIds) {
 window.INGREDIENT_DATABASE = INGREDIENT_DATABASE;
 window.CATEGORIES = CATEGORIES;
 window.PRESETS_RECIPES = PRESETS_RECIPES;
+window.INGREDIENT_SWAPS = INGREDIENT_SWAPS;
 window.calculateRecipeMatch = calculateRecipeMatch;
 window.generateProceduralRecipe = generateProceduralRecipe;
 window.generateWeeklyMealPlan = generateWeeklyMealPlan;
