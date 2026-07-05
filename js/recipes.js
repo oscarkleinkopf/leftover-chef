@@ -13,50 +13,74 @@ const CATEGORIES = {
   fruits: { name: 'Frutas', icon: '🍎' }
 };
 
-// Base ingredient database with nutritional facts per 100g and accessory zones
+// Base ingredient database with nutritional facts per 100g, accessory zones, and shelf life in days
 const INGREDIENT_DATABASE = [
   // Vegetables
-  { id: 'cebolla', name: 'Cebolla', category: 'vegetables', kcal: 40, protein: 1.1, carbs: 9.3, fat: 0.1, shelfLife: 'weeks', zone: 'vaso' },
-  { id: 'ajo', name: 'Ajo', category: 'vegetables', kcal: 149, protein: 6.4, carbs: 33, fat: 0.5, shelfLife: 'months', zone: 'vaso' },
-  { id: 'tomate', name: 'Tomate', category: 'vegetables', kcal: 18, protein: 0.9, carbs: 3.9, fat: 0.2, shelfLife: 'days', zone: 'vaso' },
-  { id: 'zanahoria', name: 'Zanahoria', category: 'vegetables', kcal: 41, protein: 0.9, carbs: 9.6, fat: 0.2, shelfLife: 'weeks', zone: 'varoma_base' },
-  { id: 'calabacin', name: 'Calabacín', category: 'vegetables', kcal: 17, protein: 1.2, carbs: 3.1, fat: 0.3, shelfLife: 'days', zone: 'varoma_base' },
-  { id: 'pimiento', name: 'Pimiento (Verde/Rojo)', category: 'vegetables', kcal: 20, protein: 0.9, carbs: 4.6, fat: 0.2, shelfLife: 'days', zone: 'vaso' },
-  { id: 'patata', name: 'Patata', category: 'vegetables', kcal: 77, protein: 2.0, carbs: 17, fat: 0.1, shelfLife: 'weeks', zone: 'cestillo' },
-  { id: 'champiñon', name: 'Champiñones / Setas', category: 'vegetables', kcal: 22, protein: 3.1, carbs: 3.3, fat: 0.3, shelfLife: 'days', zone: 'vaso' },
-  { id: 'brocoli', name: 'Brócoli', category: 'vegetables', kcal: 34, protein: 2.8, carbs: 6.6, fat: 0.4, shelfLife: 'days', zone: 'varoma_base' },
-  { id: 'espinacas', name: 'Espinacas', category: 'vegetables', kcal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, shelfLife: 'days', zone: 'varoma_base' },
-  { id: 'calabaza', name: 'Calabaza', category: 'vegetables', kcal: 26, protein: 1.0, carbs: 6.5, fill: 0.1, shelfLife: 'weeks', zone: 'varoma_base' },
+  { id: 'cebolla', name: 'Cebolla', category: 'vegetables', kcal: 40, protein: 1.1, carbs: 9.3, fat: 0.1, shelfDays: 21, zone: 'vaso' },
+  { id: 'ajo', name: 'Ajo', category: 'vegetables', kcal: 149, protein: 6.4, carbs: 33, fat: 0.5, shelfDays: 60, zone: 'vaso' },
+  { id: 'tomate', name: 'Tomate', category: 'vegetables', kcal: 18, protein: 0.9, carbs: 3.9, fat: 0.2, shelfDays: 4, zone: 'vaso' },
+  { id: 'zanahoria', name: 'Zanahoria', category: 'vegetables', kcal: 41, protein: 0.9, carbs: 9.6, fat: 0.2, shelfDays: 14, zone: 'varoma_base' },
+  { id: 'calabacin', name: 'Calabacín', category: 'vegetables', kcal: 17, protein: 1.2, carbs: 3.1, fat: 0.3, shelfDays: 4, zone: 'varoma_base' },
+  { id: 'pimiento', name: 'Pimiento (Verde/Rojo)', category: 'vegetables', kcal: 20, protein: 0.9, carbs: 4.6, fat: 0.2, shelfDays: 5, zone: 'vaso' },
+  { id: 'patata', name: 'Patata', category: 'vegetables', kcal: 77, protein: 2.0, carbs: 17, fat: 0.1, shelfDays: 30, zone: 'cestillo' },
+  { id: 'champiñon', name: 'Champiñones / Setas', category: 'vegetables', kcal: 22, protein: 3.1, carbs: 3.3, fat: 0.3, shelfDays: 3, zone: 'vaso' },
+  { id: 'brocoli', name: 'Brócoli', category: 'vegetables', kcal: 34, protein: 2.8, carbs: 6.6, fat: 0.4, shelfDays: 3, zone: 'varoma_base' },
+  { id: 'espinacas', name: 'Espinacas', category: 'vegetables', kcal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, shelfDays: 2, zone: 'varoma_base' },
+  { id: 'calabaza', name: 'Calabaza', category: 'vegetables', kcal: 26, protein: 1.0, carbs: 6.5, fat: 0.1, shelfDays: 20, zone: 'varoma_base' },
 
   // Proteins
-  { id: 'pollo', name: 'Pechuga de Pollo', category: 'proteins', kcal: 165, protein: 31, carbs: 0, fat: 3.6, shelfLife: 'days', zone: 'varoma_bandeja' },
-  { id: 'ternera', name: 'Carne de Ternera', category: 'proteins', kcal: 250, protein: 26, carbs: 0, fat: 15, shelfLife: 'days', zone: 'varoma_bandeja' },
-  { id: 'cerdo', name: 'Magro de Cerdo', category: 'proteins', kcal: 242, protein: 27, carbs: 0, fat: 14, shelfLife: 'days', zone: 'varoma_bandeja' },
-  { id: 'salmon', name: 'Salmón', category: 'proteins', kcal: 208, protein: 20, carbs: 0, fat: 13, shelfLife: 'days', zone: 'varoma_bandeja' },
-  { id: 'gambas', name: 'Gambas / Langostinos', category: 'proteins', kcal: 85, protein: 20, carbs: 0, fat: 0.5, shelfLife: 'days', zone: 'varoma_bandeja' },
-  { id: 'tofu', name: 'Tofu', category: 'proteins', kcal: 76, protein: 8.0, carbs: 1.9, fat: 4.8, shelfLife: 'weeks', zone: 'cestillo' },
-  { id: 'garbanzos', name: 'Garbanzos Cocidos', category: 'proteins', kcal: 164, protein: 8.9, carbs: 27, fat: 2.6, shelfLife: 'months', zone: 'cestillo' },
-  { id: 'lentejas', name: 'Lentejas Cocidas', category: 'proteins', kcal: 116, protein: 9.0, carbs: 20, fat: 0.4, shelfLife: 'months', zone: 'cestillo' },
+  { id: 'pollo', name: 'Pechuga de Pollo', category: 'proteins', kcal: 165, protein: 31, carbs: 0, fat: 3.6, shelfDays: 3, zone: 'varoma_bandeja' },
+  { id: 'ternera', name: 'Carne de Ternera', category: 'proteins', kcal: 250, protein: 26, carbs: 0, fat: 15, shelfDays: 3, zone: 'varoma_bandeja' },
+  { id: 'cerdo', name: 'Magro de Cerdo', category: 'proteins', kcal: 242, protein: 27, carbs: 0, fat: 14, shelfDays: 3, zone: 'varoma_bandeja' },
+  { id: 'salmon', name: 'Salmón', category: 'proteins', kcal: 208, protein: 20, carbs: 0, fat: 13, shelfDays: 2, zone: 'varoma_bandeja' },
+  { id: 'gambas', name: 'Gambas / Langostinos', category: 'proteins', kcal: 85, protein: 20, carbs: 0, fat: 0.5, shelfDays: 2, zone: 'varoma_bandeja' },
+  { id: 'tofu', name: 'Tofu', category: 'proteins', kcal: 76, protein: 8.0, carbs: 1.9, fat: 4.8, shelfDays: 10, zone: 'cestillo' },
+  { id: 'garbanzos', name: 'Garbanzos Cocidos', category: 'proteins', kcal: 164, protein: 8.9, carbs: 27, fat: 2.6, shelfDays: 180, zone: 'cestillo' },
+  { id: 'lentejas', name: 'Lentejas Cocidas', category: 'proteins', kcal: 116, protein: 9.0, carbs: 20, fat: 0.4, shelfDays: 180, zone: 'cestillo' },
 
   // Dairy & Eggs
-  { id: 'leche', name: 'Leche', category: 'dairy', kcal: 42, protein: 3.4, carbs: 5.0, fat: 1.0, shelfLife: 'weeks', zone: 'vaso' },
-  { id: 'queso_rallado', name: 'Queso Rallado (Parmesano/Gouda)', category: 'dairy', kcal: 389, protein: 26, carbs: 1.3, fat: 30, shelfLife: 'weeks', zone: 'vaso' },
-  { id: 'huevo', name: 'Huevos', category: 'dairy', kcal: 155, protein: 13, carbs: 1.1, fat: 11, shelfLife: 'weeks', zone: 'cestillo' },
-  { id: 'mantequilla', name: 'Mantequilla', category: 'dairy', kcal: 717, protein: 0.9, carbs: 0.1, fat: 81, shelfLife: 'months', zone: 'vaso' },
-  { id: 'nata', name: 'Nata para cocinar', category: 'dairy', kcal: 196, protein: 2.7, carbs: 4.0, fat: 19, shelfLife: 'weeks', zone: 'vaso' },
-  { id: 'yogur', name: 'Yogur Natural', category: 'dairy', kcal: 59, protein: 3.5, carbs: 4.7, fat: 3.3, shelfLife: 'weeks', zone: 'vaso' },
+  { id: 'leche', name: 'Leche', category: 'dairy', kcal: 42, protein: 3.4, carbs: 5.0, fat: 1.0, shelfDays: 7, zone: 'vaso' },
+  { id: 'queso_rallado', name: 'Queso Rallado (Parmesano/Gouda)', category: 'dairy', kcal: 389, protein: 26, carbs: 1.3, fat: 30, shelfDays: 14, zone: 'vaso' },
+  { id: 'huevo', name: 'Huevos', category: 'dairy', kcal: 155, protein: 13, carbs: 1.1, fat: 11, shelfDays: 14, zone: 'cestillo' },
+  { id: 'mantequilla', name: 'Mantequilla', category: 'dairy', kcal: 717, protein: 0.9, carbs: 0.1, fat: 81, shelfDays: 45, zone: 'vaso' },
+  { id: 'nata', name: 'Nata para cocinar', category: 'dairy', kcal: 196, protein: 2.7, carbs: 4.0, fat: 19, shelfDays: 7, zone: 'vaso' },
+  { id: 'yogur', name: 'Yogur Natural', category: 'dairy', kcal: 59, protein: 3.5, carbs: 4.7, fat: 3.3, shelfDays: 10, zone: 'vaso' },
 
   // Pantry & Condiments
-  { id: 'aceite', name: 'Aceite de Oliva', category: 'pantry', kcal: 884, protein: 0, carbs: 0, fat: 100, shelfLife: 'months', staple: true, zone: 'vaso' },
-  { id: 'arroz', name: 'Arroz Redondo / Carnaroli', category: 'pantry', kcal: 360, protein: 6.6, carbs: 80, fat: 0.6, shelfLife: 'months', zone: 'vaso' },
-  { id: 'pasta', name: 'Pasta (Tallarines/Macarrones)', category: 'pantry', kcal: 350, protein: 12, carbs: 75, fat: 1.5, shelfLife: 'months', zone: 'vaso' },
-  { id: 'tomate_triturado', name: 'Tomate Triturado / Frito', category: 'pantry', kcal: 38, protein: 1.5, carbs: 7.5, fat: 0.2, shelfLife: 'months', zone: 'vaso' },
-  { id: 'caldo', name: 'Caldo de Verduras / Pollo', category: 'pantry', kcal: 15, protein: 0.5, carbs: 3.0, fat: 0.2, shelfLife: 'months', zone: 'vaso' },
-  { id: 'harina', name: 'Harina de Trigo', category: 'pantry', kcal: 364, protein: 10, carbs: 76, fat: 1.0, shelfLife: 'months', staple: true, zone: 'vaso' },
-  { id: 'sal', name: 'Sal', category: 'pantry', kcal: 0, protein: 0, carbs: 0, fat: 0, shelfLife: 'months', staple: true, zone: 'vaso' },
-  { id: 'pimienta', name: 'Pimienta Negra', category: 'pantry', kcal: 251, protein: 10, carbs: 64, fat: 3.3, shelfLife: 'months', staple: true, zone: 'vaso' }
-];s', staple: true }
+  { id: 'aceite', name: 'Aceite de Oliva', category: 'pantry', kcal: 884, protein: 0, carbs: 0, fat: 100, shelfDays: 365, staple: true, zone: 'vaso' },
+  { id: 'arroz', name: 'Arroz Redondo / Carnaroli', category: 'pantry', kcal: 360, protein: 6.6, carbs: 80, fat: 0.6, shelfDays: 180, zone: 'vaso' },
+  { id: 'pasta', name: 'Pasta (Tallarines/Macarrones)', category: 'pantry', kcal: 350, protein: 12, carbs: 75, fat: 1.5, shelfDays: 180, zone: 'vaso' },
+  { id: 'tomate_triturado', name: 'Tomate Triturado / Frito', category: 'pantry', kcal: 38, protein: 1.5, carbs: 7.5, fat: 0.2, shelfDays: 90, zone: 'vaso' },
+  { id: 'caldo', name: 'Caldo de Verduras / Pollo', category: 'pantry', kcal: 15, protein: 0.5, carbs: 3.0, fat: 0.2, shelfDays: 90, zone: 'vaso' },
+  { id: 'harina', name: 'Harina de Trigo', category: 'pantry', kcal: 364, protein: 10, carbs: 76, fat: 1.0, shelfDays: 180, staple: true, zone: 'vaso' },
+  { id: 'sal', name: 'Sal', category: 'pantry', kcal: 0, protein: 0, carbs: 0, fat: 0, shelfDays: 365, staple: true, zone: 'vaso' },
+  { id: 'pimienta', name: 'Pimienta Negra', category: 'pantry', kcal: 251, protein: 10, carbs: 64, fat: 3.3, shelfDays: 365, staple: true, zone: 'vaso' }
 ];
+
+// Dictionary of culinary ingredient swaps
+const INGREDIENT_SWAPS = {
+  nata: [
+    { id: 'yogur', name: 'Yogur Natural (Sustituto Ligero)', tip: 'Añadir al final sin hervir para mantener su textura cremosa' },
+    { id: 'leche', name: 'Leche con Mantequilla (50/50)', tip: 'Emulsionar 2 min a 80°C vel 4' }
+  ],
+  mantequilla: [
+    { id: 'aceite', name: 'Aceite de Oliva Virgen Extra', tip: 'Usar 80% de la cantidad indicada en la receta' }
+  ],
+  pollo: [
+    { id: 'tofu', name: 'Tofu firme en trozos (Opción Vegana)', tip: 'Marinar previamente con ajo y especias' },
+    { id: 'champiñon', name: 'Champiñones laminados gruesos', tip: 'Sofreír 4 min a 120°C vel cuchara ↺' }
+  ],
+  arroz: [
+    { id: 'pasta', name: 'Pasta corta (maravilla / fideos)', tip: 'Mismo tiempo a 100°C vel 1 ↺' },
+    { id: 'calabacin', name: 'Falso Arroz de Calabacín', tip: 'Triturar 4 seg vel 5 y cocinar al vapor 5 min' }
+  ],
+  leche: [
+    { id: 'yogur', name: 'Yogur diluido en agua', tip: 'Mezclar suavemente en vel 3' }
+  ],
+  queso_rallado: [
+    { id: 'pan_rallado', name: 'Pan rallado tostado con ajo y perejil', tip: 'Espolvorear al servir para dar crujiente' }
+  ]
+};
 
 // Curated Thermomix TM5/TM6 Compatible Recipes
 const PRESETS_RECIPES = [
