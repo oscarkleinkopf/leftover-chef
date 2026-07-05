@@ -4,7 +4,7 @@
   "description": "Thermomix AI Refrigerator Recipe Generator",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node start.js",
     "watch-sync": "node sync-watcher.js"
   },
   "keywords": [
