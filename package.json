@@ -1,0 +1,18 @@
+{
+  "name": "leftover-chef",
+  "version": "1.0.0",
+  "description": "Thermomix AI Refrigerator Recipe Generator",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "thermomix",
+    "ai",
+    "recipes",
+    "refrigerator",
+    "cooking"
+  ],
+  "author": "Antigravity Chef",
+  "license": "MIT"
+}

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leftover Chef - Thermomix AI Recipe Generator</title>
+  <!-- Google Fonts: Inter and Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- PWA Manifest & Meta -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <!-- SEO & Favicon Meta -->
+  <meta name="description" content="Genera exquisitas recetas para tu Thermomix TM5/TM6 escaneando las fotos de tu refrigerador. Calcula nutrición, cocina paso a paso con asistente de voz y temporizadores.">
+</head>
+<body>
+
+  <!-- Background Ambient Glows -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">🍳</div>
+        <div class="brand-text">
+          <h1>Leftover <span class="highlight">Chef</span></h1>
+          <p class="subtitle">Asistente AI para tu Thermomix</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-bookmarks" class="icon-btn" title="Recetas Guardadas">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"/></svg>
+        </button>
+        <button id="btn-settings" class="icon-btn" title="Configuración de IA">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Layout Grid -->
+    <main class="app-main">
+      
+      <!-- LEFT SECTION: Inputs, Photos and Offline List -->
+      <section class="main-left">
+        
+        <!-- PHOTO SCANNER CARD -->
+        <div class="card glass scanner-card">
+          <div class="card-header">
+            <h3>📷 Escáner de Refrigerador</h3>
+            <span class="badge badge-neon" id="scanner-mode-badge">Simulador Activo</span>
+          </div>
+          
+          <div class="scanner-dropzone" id="dropzone">
+            <input type="file" id="file-input" accept="image/*" multiple style="display:none;">
+            <div class="dropzone-content" id="dropzone-prompt">
+              <div class="pulse-ring">
+                <svg viewBox="0 0 24 24" class="cloud-icon"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3zm-5.55-8h-2.9v3H8l4 4 4-4h-2.55z"/></svg>
+              </div>
+              <h4>Arrastra tus fotos de la nevera aquí</h4>
+              <p>O haz clic para tomar fotos con tu cámara</p>
+              <span class="btn btn-secondary">Seleccionar Imágenes</span>
+            </div>
+            
+            <!-- Real-time Interactive Scanning Canvas Container -->
+            <div id="scan-container" class="scan-container hidden">
+              <canvas id="scan-canvas"></canvas>
+              <div class="scanning-beam" id="scanning-beam"></div>
+              <div class="scanning-status" id="scanning-status">Analizando ingredientes...</div>
+            </div>
+          </div>
+
+          <!-- Uploaded Thumbnails Queue -->
+          <div class="thumbnails-queue hidden" id="thumbnails-queue">
+            <!-- Dynamically populated via JS -->
+          </div>
+
+          <div class="scanner-actions hidden" id="scanner-actions">
+            <button id="btn-cancel-scan" class="btn btn-tertiary">Limpiar</button>
+            <button id="btn-start-scan" class="btn btn-primary btn-glow">🚀 Escanear Ingredientes</button>
+          </div>
+        </div>
+
+        <!-- OFFLINE INGREDIENTS CHECKLIST CARD -->
+        <div class="card glass offline-card">
+          <div class="card-header">
+            <h3>🗂️ Ingredientes y Despensa (Offline)</h3>
+            <span class="tooltip-trigger" title="Añade ingredientes manualmente o selecciona de la lista para buscar recetas sin fotos">ℹ️</span>
+          </div>
+
+          <!-- Manual quick search / add -->
+          <div class="manual-input-bar">
+            <input type="text" id="manual-ingredient-input" placeholder="Escribe un ingrediente (ej. calabacín)..." autocomplete="off">
+            <button id="btn-add-manual" class="btn btn-secondary">Añadir</button>
+          </div>
+          
+          <!-- Category Accordion Selector -->
+          <div class="categories-accordion">
+            <!-- Accordion items loaded dynamically from DB -->
+            <div class="accordion-tabs-nav" id="accordion-nav">
+              <!-- JS builds category tabs here -->
+            </div>
+            <div class="accordion-content-panel" id="accordion-panel">
+              <!-- Checklist of items matching selected category -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT SECTION: Filters, Active Tags and Recipe Results -->
+      <section class="main-right">
+        
+        <!-- ACTIVE INGREDIENTS CLOUD -->
+        <div class="card glass active-ingredients-card">
+          <div class="card-header">
+            <h3>🥗 Ingredientes Detectados / Listos (<span id="active-count">0</span>)</h3>
+            <button id="btn-clear-all-ingredients" class="btn-text">Quitar todos</button>
+          </div>
+          <div class="ingredients-cloud" id="ingredients-cloud">
+            <div class="empty-cloud-message">Ningún ingrediente seleccionado. Sube una foto o agrégalos en el panel offline inferior.</div>
+          </div>
+        </div>
+
+        <!-- AI DIETARY AND PREFERENCE FILTER -->
+        <div class="card glass filters-card">
+          <div class="card-header">
+            <h3>⚙️ Preferencias y Filtros de Receta</h3>
+          </div>
+          <div class="filters-grid">
+            <div class="filter-group">
+              <label>Dieta y Alérgenos</label>
+              <div class="chip-container" id="diet-filters">
+                <button class="chip" data-filter="vegan">Vegano 🌱</button>
+                <button class="chip" data-filter="vegetarian">Vegetariano 🥚</button>
+                <button class="chip" data-filter="gluten-free">Sin Gluten 🌾</button>
+                <button class="chip" data-filter="low-carb">Bajo Carb 🥩</button>
+                <button class="chip" data-filter="keto">Keto 🧈</button>
+              </div>
+            </div>
+            <div class="filter-group">
+              <label for="portion-selector">Porciones</label>
+              <select id="portion-selector" class="custom-select">
+                <option value="2">2 Personas</option>
+                <option value="3" selected>3 Personas</option>
+                <option value="4">4 Personas</option>
+                <option value="6">6 Personas</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECIPE RECOMMENDATIONS -->
+        <div class="recipes-section-header">
+          <h2>🍽️ Recetas Recomendadas para Thermomix</h2>
+          <p class="recipe-disclaimer">Compatibles con modelos TM5 y TM6</p>
+        </div>
+
+        <div class="recipes-grid" id="recipes-grid">
+          <!-- Dynamically populated recipe cards or loading skeleton -->
+          <div class="empty-recipes-placeholder">
+            <div class="placeholder-icon">🍲</div>
+            <h3>¿Qué cocinamos hoy?</h3>
+            <p>Selecciona ingredientes a la izquierda para generar sugerencias gastronómicas perfectas para tu Thermomix.</p>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- SETTINGS MODAL (GEMINI API KEY CONFIG) -->
+  <div class="modal-overlay hidden" id="modal-settings">
+    <div class="modal glass animate-modal">
+      <div class="modal-header">
+        <h2>Configuración del Motor de IA</h2>
+        <button class="close-modal-btn" id="btn-close-settings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Elige si deseas usar recetas locales simuladas o conectar con la API de inteligencia artificial real de Google Gemini.</p>
+        
+        <div class="settings-option-card">
+          <div class="option-row">
+            <div class="option-info">
+              <h4>Modo Inteligente Gemini AI</h4>
+              <p>Analiza fotos reales de tu nevera y genera recetas gastronómicas únicas personalizadas a tus ingredientes exactos.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="toggle-gemini-mode">
+              <span class="slider"></span>
+            </label>
+          </div>
+          
+          <div class="api-key-container collapsed" id="api-key-container">
+            <label for="api-key-input">Tu Gemini API Key (Google AI Studio)</label>
+            <div class="input-password-wrapper">
+              <input type="password" id="api-key-input" placeholder="AIzaSy...">
+              <button class="toggle-password-btn" id="btn-toggle-password">👁️</button>
+            </div>
+            <p class="helper-text">
+              ¿No tienes una clave? Consigue una gratis en <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>. Se almacena localmente y con total privacidad en tu navegador.
+            </p>
+            <div id="api-key-status" class="api-key-status"></div>
+          </div>
+        </div>
+
+        <div class="settings-option-card">
+          <h4>Modelo de Thermomix Predeterminado</h4>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="tm-model" value="TM6" checked>
+              <span>Thermomix TM6</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="tm-model" value="TM5">
+              <span>Thermomix TM5</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-tertiary" id="btn-reset-settings">Restaurar Valores</button>
+        <button class="btn btn-primary" id="btn-save-settings">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVED RECIPES BOOKMARKS MODAL -->
+  <div class="modal-overlay hidden" id="modal-bookmarks">
+    <div class="modal glass animate-modal">
+      <div class="modal-header">
+        <h2>🔖 Mis Recetas Guardadas</h2>
+        <button class="close-modal-btn" id="btn-close-bookmarks">&times;</button>
+      </div>
+      <div class="modal-body" id="bookmarks-modal-body">
+        <!-- JS builds bookmarked recipes list -->
+      </div>
+    </div>
+  </div>
+
+  <!-- RECIPE DETAIL MODAL -->
+  <div class="modal-overlay hidden" id="modal-recipe-detail">
+    <div class="modal glass modal-large animate-modal">
+      <div class="modal-header">
+        <div class="recipe-detail-header-text">
+          <span class="diet-tags-container" id="detail-diet-tags"></span>
+          <h2 id="detail-title">Nombre de la Receta</h2>
+          <p id="detail-subtitle">Subtítulo explicativo</p>
+        </div>
+        <button class="close-modal-btn" id="btn-close-detail">&times;</button>
+      </div>
+      
+      <div class="modal-body recipe-detail-body">
+        
+        <!-- Recipe Hero Row -->
+        <div class="recipe-detail-hero">
+          <div class="recipe-hero-image-wrapper">
+            <img id="detail-image" src="" alt="Receta">
+            <button id="btn-bookmark-recipe" class="bookmark-floating-btn" title="Guardar Receta">
+              <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+            </button>
+          </div>
+          
+          <!-- Key Specs Cards -->
+          <div class="recipe-specs-grid">
+            <div class="spec-card">
+              <span class="spec-icon">⏱️</span>
+              <div class="spec-value" id="detail-time">30 min</div>
+              <div class="spec-label">Tiempo Total</div>
+            </div>
+            <div class="spec-card">
+              <span class="spec-icon">👥</span>
+              <div class="spec-value" id="detail-portions">4 raciones</div>
+              <div class="spec-label">Porciones</div>
+            </div>
+            <div class="spec-card">
+              <span class="spec-icon">📈</span>
+              <div class="spec-value" id="detail-difficulty">Fácil</div>
+              <div class="spec-label">Dificultad</div>
+            </div>
+            <div class="spec-card">
+              <span class="spec-icon">✨</span>
+              <div class="spec-value" id="detail-compatibility">100%</div>
+              <div class="spec-label">Coincidencia</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recipe Content Columns -->
+        <div class="recipe-detail-grid">
+          
+          <!-- Column 1: Ingredients & Equipment -->
+          <div class="detail-col-ingredients">
+            <h3>🥕 Ingredientes Requeridos</h3>
+            <ul class="detail-ingredients-list" id="detail-ingredients-list">
+              <!-- Loaded via JS -->
+            </ul>
+            
+            <div class="ingredients-export-actions">
+              <button id="btn-export-whatsapp" class="btn btn-secondary btn-sm" style="margin-top: 10px; width: 100%;">
+                🟢 Compartir Faltantes por WhatsApp
+              </button>
+              <button id="btn-export-clipboard" class="btn btn-tertiary btn-sm" style="margin-top: 5px; width: 100%;">
+                📋 Copiar Lista al Portapapeles
+              </button>
+            </div>
+            
+            <div class="equipment-section">
+              <h3>⚙️ Accesorios Thermomix a mano</h3>
+              <div class="equipment-icons" id="detail-accessories">
+                <!-- Spatula, Varoma, Simmering Basket indicators -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Nutrition Visual Dashboard -->
+          <div class="detail-col-nutrition">
+            <h3>📊 Valores Nutricionales (por ración)</h3>
+            <div class="nutrition-dashboard">
+              
+              <!-- Circular Progress charts (SVG based) -->
+              <div class="nutrition-circles-grid">
+                
+                <div class="nutrition-circle-item">
+                  <div class="svg-circle-wrapper">
+                    <svg viewBox="0 0 36 36" class="circular-chart calories">
+                      <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      <path class="circle" id="nut-cal-stroke" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <div class="circle-number" id="nut-cal-val">420</div>
+                  </div>
+                  <span class="circle-label">Calorías (kcal)</span>
+                </div>
+
+                <div class="nutrition-circle-item">
+                  <div class="svg-circle-wrapper">
+                    <svg viewBox="0 0 36 36" class="circular-chart protein">
+                      <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      <path class="circle" id="nut-prot-stroke" stroke-dasharray="30, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <div class="circle-number" id="nut-prot-val">18g</div>
+                  </div>
+                  <span class="circle-label">Proteínas</span>
+                </div>
+
+                <div class="nutrition-circle-item">
+                  <div class="svg-circle-wrapper">
+                    <svg viewBox="0 0 36 36" class="circular-chart carbs">
+                      <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      <path class="circle" id="nut-carbs-stroke" stroke-dasharray="50, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <div class="circle-number" id="nut-carbs-val">65g</div>
+                  </div>
+                  <span class="circle-label">Carbohidratos</span>
+                </div>
+
+                <div class="nutrition-circle-item">
+                  <div class="svg-circle-wrapper">
+                    <svg viewBox="0 0 36 36" class="circular-chart fat">
+                      <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      <path class="circle" id="nut-fat-stroke" stroke-dasharray="20, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <div class="circle-number" id="nut-fat-val">12g</div>
+                  </div>
+                  <span class="circle-label">Grasas</span>
+                </div>
+
+              </div>
+
+              <!-- Nutrition warning/tips -->
+              <div class="nutrition-tip" id="nutrition-profile-tip">
+                💡 Este plato tiene un aporte moderado en proteínas. Es ideal como comida completa.
+              </div>
+            </div>
+
+            <!-- Varoma Multi-Level Visualizer -->
+            <div class="varoma-stack-visualizer-container" style="margin-top: 24px;">
+              <h3>🥘 Distribución en Niveles Thermomix</h3>
+              <div class="varoma-stack" id="detail-varoma-stack">
+                <!-- Varoma Bandeja (Top) -->
+                <div class="varoma-layer layer-bandeja" id="stack-layer-bandeja">
+                  <div class="layer-badge">Bandeja Varoma</div>
+                  <div class="layer-items" id="items-layer-bandeja">Ninguno</div>
+                </div>
+                <!-- Varoma Recipiente (Middle) -->
+                <div class="varoma-layer layer-recipiente" id="stack-layer-recipiente">
+                  <div class="layer-badge">Recipiente Varoma</div>
+                  <div class="layer-items" id="items-layer-recipiente">Ninguno</div>
+                </div>
+                <!-- Cestillo (Inside Bowl) -->
+                <div class="varoma-layer layer-cestillo" id="stack-layer-cestillo">
+                  <div class="layer-badge">Cestillo (Interior)</div>
+                  <div class="layer-items" id="items-layer-cestillo">Ninguno</div>
+                </div>
+                <!-- Vaso (Bowl Base) -->
+                <div class="varoma-layer layer-vaso" id="stack-layer-vaso">
+                  <div class="layer-badge">Vaso de Mezclas</div>
+                  <div class="layer-items" id="items-layer-vaso">Agua, aromáticos</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sustainability Card -->
+            <div class="sustainability-card-container" style="margin-top: 24px;">
+              <h3>🌱 Impacto del Rescate de Comida</h3>
+              <div class="sustainability-card glass">
+                <div class="sust-metric">
+                  <span class="sust-icon">⚖️</span>
+                  <div class="sust-det">
+                    <div class="sust-val" id="sust-val-grams">0g</div>
+                    <div class="sust-lbl">Rescatado</div>
+                  </div>
+                </div>
+                <div class="sust-metric">
+                  <span class="sust-icon">💨</span>
+                  <div class="sust-det">
+                    <div class="sust-val" id="sust-val-co2">0.0 kg</div>
+                    <div class="sust-lbl">CO₂ Evitado</div>
+                  </div>
+                </div>
+                <div class="sust-metric">
+                  <span class="sust-icon">💰</span>
+                  <div class="sust-det">
+                    <div class="sust-val" id="sust-val-money">$0.00</div>
+                    <div class="sust-lbl">Ahorro Est.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recipe Overview Steps (Static Preview) -->
+        <div class="detail-steps-preview">
+          <h3>📋 Pasos del Cocinado (Resumen)</h3>
+          <div class="steps-preview-list" id="detail-steps-preview-list">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-close-detail-footer">Cerrar</button>
+        <button class="btn btn-primary btn-glow" id="btn-start-cooking">
+          👨‍🍳 Iniciar Cocinado Interactivo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN COOK MODE OVERLAY -->
+  <div class="cook-mode-overlay hidden" id="cook-mode-overlay">
+    <div class="cook-mode-container">
+      
+      <!-- Top Cook Header -->
+      <div class="cook-header">
+        <button id="btn-exit-cook" class="cook-exit-btn">← Salir del Cocinado</button>
+        <div class="cook-recipe-info">
+          <h3 id="cook-recipe-title">Risotto Cremoso de Champiñones</h3>
+          <p>Paso <span id="cook-step-current">1</span> de <span id="cook-step-total">6</span></p>
+        </div>
+        <div class="cook-header-right" style="display: flex; gap: 10px;">
+          <!-- Microphone Voice Commands toggle -->
+          <button id="btn-toggle-mic" class="cook-speech-btn" title="Control de Voz Manos Libres">
+            <span class="mic-icon">🎤</span>
+            <span class="mic-status-label">Micrófono Apagado</span>
+          </button>
+          
+          <!-- Speech Voice Selector toggle -->
+          <button id="btn-toggle-speech" class="cook-speech-btn active" title="Activar/Desactivar Lector de Voz">
+            <span class="speech-icon">🔊</span>
+            <span class="speech-status-label">Voz Activa</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Step Body -->
+      <div class="cook-body">
+        
+        <!-- Large Step Display -->
+        <div class="cook-step-card glass">
+          <div class="cook-step-badge">INSTRUCCIÓN</div>
+          <div class="cook-step-text" id="cook-step-text">
+            Poner en el vaso la cebolla cortada en cuartos y el aceite de oliva.
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;">
+            <button class="btn btn-secondary speech-repeat-btn" id="btn-speech-repeat">
+              🗣️ Repetir instrucción en voz alta
+            </button>
+            <div class="mic-commands-helper hidden" id="mic-commands-helper" style="margin-top: 10px;">
+              💡 <span>Control por voz activo. Puedes decir: <strong>"Siguiente"</strong>, <strong>"Atrás"</strong>, <strong>"Repetir"</strong>, <strong>"Pausar"</strong> o <strong>"Iniciar"</strong>.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thermomix parameters visual panel -->
+        <div class="cook-parameters-panel">
+          
+          <!-- Speed Dial -->
+          <div class="param-dial dial-speed">
+            <div class="dial-header">VELOCIDAD</div>
+            <div class="dial-body">
+              <div class="dial-center">
+                <span id="param-speed-val" class="dial-value">5</span>
+                <span id="param-reverse" class="dial-sub-value hidden">↺</span>
+              </div>
+            </div>
+            <div class="dial-label" id="param-speed-label">Troceado</div>
+          </div>
+
+          <!-- Temp Dial -->
+          <div class="param-dial dial-temp">
+            <div class="dial-header">TEMPERATURA</div>
+            <div class="dial-body">
+              <div class="dial-center">
+                <span id="param-temp-val" class="dial-value">120°</span>
+                <span class="dial-sub-value">C</span>
+              </div>
+            </div>
+            <div class="dial-label" id="param-temp-label">Sofreír (TM5/TM6)</div>
+          </div>
+
+          <!-- Accessories Dial -->
+          <div class="param-dial dial-accessory">
+            <div class="dial-header">ACCESORIO</div>
+            <div class="dial-body">
+              <div class="dial-center">
+                <span id="param-accessory-icon" class="dial-value-icon">🔪</span>
+              </div>
+            </div>
+            <div class="dial-label" id="param-accessory-label">Cuchillas</div>
+          </div>
+
+          <!-- Cooking Timer (Interactive circular clock) -->
+          <div class="param-dial dial-timer" id="param-timer-card">
+            <div class="dial-header">TEMPORIZADOR</div>
+            <div class="dial-body">
+              <div class="dial-center cursor-pointer" id="btn-toggle-timer">
+                <span id="param-timer-val" class="dial-value">00:00</span>
+                <span id="param-timer-status" class="dial-sub-value">INICIAR</span>
+              </div>
+            </div>
+            <div class="dial-label">Pulsa para pausar/reanudar</div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="cook-footer">
+        <button class="cook-nav-btn" id="btn-cook-prev">
+          <span class="arrow">←</span> Paso Anterior
+        </button>
+        
+        <!-- Progress bar indicator -->
+        <div class="cook-progress-bar-wrapper">
+          <div class="cook-progress-bar" id="cook-progress-bar" style="width: 16.6%;"></div>
+        </div>
+
+        <button class="cook-nav-btn cook-nav-btn-next" id="btn-cook-next">
+          Siguiente Paso <span class="arrow">→</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Audio elements for kitchen alert and timers -->
+  <audio id="audio-timer-done" src="https://assets.mixkit.co/active_storage/sfx/911/911-84.wav" preload="auto"></audio>
+
+  <!-- JS Dependencies -->
+  <script src="js/recipes.js"></script>
+  <script src="js/scanner.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
