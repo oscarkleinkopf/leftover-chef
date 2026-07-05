@@ -329,9 +329,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const ing = window.INGREDIENT_DATABASE.find(item => item.id === id);
       const name = ing ? ing.name : id;
       
+      let badgeHtml = '';
+      if (ing && ing.shelfDays !== undefined) {
+        if (ing.shelfDays <= 3) {
+          badgeHtml = `<span class="shelf-badge shelf-urgent">🔴 < ${ing.shelfDays}d</span>`;
+        } else if (ing.shelfDays <= 7) {
+          badgeHtml = `<span class="shelf-badge shelf-warning">🟡 < ${ing.shelfDays}d</span>`;
+        } else {
+          badgeHtml = `<span class="shelf-badge shelf-fresh">🟢 < ${ing.shelfDays}d</span>`;
+        }
+      }
+
       const tag = document.createElement('div');
       tag.className = 'ingredient-tag';
-      tag.innerHTML = `${name} <span class="remove-icon">&times;</span>`;
+      tag.innerHTML = `${name} ${badgeHtml} <span class="remove-icon">&times;</span>`;
       tag.addEventListener('click', () => removeIngredientFromState(id));
       
       el.ingredientsCloud.appendChild(tag);
