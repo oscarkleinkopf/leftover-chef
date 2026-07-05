@@ -242,10 +242,35 @@
     <div class="modal glass animate-modal">
       <div class="modal-header">
         <h2>🔖 Mis Recetas Guardadas</h2>
-        <button class="close-modal-btn" id="btn-close-bookmarks">&times;</button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button id="btn-print-bookmarks" class="btn btn-tertiary btn-sm">🖨️ Imprimir Recetario PDF</button>
+          <button class="close-modal-btn" id="btn-close-bookmarks">&times;</button>
+        </div>
       </div>
       <div class="modal-body" id="bookmarks-modal-body">
         <!-- JS builds bookmarked recipes list -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 3-DAY ZERO WASTE MEAL PLAN MODAL -->
+  <div class="modal-overlay hidden" id="modal-meal-plan">
+    <div class="modal glass modal-large animate-modal">
+      <div class="modal-header">
+        <div>
+          <h2>📅 Plan Semanal Cero Desperdicio (3 Días)</h2>
+          <p class="subtitle" style="font-size: 0.85rem; color: var(--text-secondary);">Aprovechamiento estratégico de tus ingredientes en 6 comidas principales</p>
+        </div>
+        <button class="close-modal-btn" id="btn-close-meal-plan">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="meal-plan-timeline" id="meal-plan-timeline">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-tertiary" id="btn-print-meal-plan">🖨️ Imprimir Plan en PDF</button>
+        <button class="btn btn-primary" id="btn-close-meal-plan-footer">Listo</button>
       </div>
     </div>
   </div>
