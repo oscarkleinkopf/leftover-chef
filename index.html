@@ -340,6 +340,9 @@
               <button id="btn-export-clipboard" class="btn btn-tertiary btn-sm" style="margin-top: 5px; width: 100%;">
                 📋 Copiar Lista al Portapapeles
               </button>
+              <button id="btn-print-recipe-pdf" class="btn btn-tertiary btn-sm" style="margin-top: 5px; width: 100%;">
+                🖨️ Exportar Receta a PDF / Imprimir
+              </button>
             </div>
             
             <div class="equipment-section">
@@ -497,6 +500,12 @@
           <p>Paso <span id="cook-step-current">1</span> de <span id="cook-step-total">6</span></p>
         </div>
         <div class="cook-header-right" style="display: flex; gap: 10px;">
+          <!-- Kid Chef Mode toggle -->
+          <button id="btn-toggle-kid-mode" class="cook-speech-btn" title="Modo Cocina en Familia / Niños">
+            <span class="speech-icon">👶</span>
+            <span id="kid-mode-label">Modo Niños: Off</span>
+          </button>
+          
           <!-- Microphone Voice Commands toggle -->
           <button id="btn-toggle-mic" class="cook-speech-btn" title="Control de Voz Manos Libres">
             <span class="mic-icon">🎤</span>
