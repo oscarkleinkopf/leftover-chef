@@ -525,12 +525,15 @@ function generateProceduralRecipe(availableIds, dietaryFilters = []) {
     title,
     subtitle,
     image: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?auto=format&fit=crop&q=80&w=800',
-    prepTime,
-    portions,
+    prepTime: '20-25 min',
+    portions: '2-3 personas',
+    difficulty: 'Fácil',
     diet,
-    difficulty,
     requiredIngredients,
     optionalIngredients: [],
+    modelCompatibility: ['TM5', 'TM6'],
+    matchingIngredients: availableIds,
+    missingIngredients: [],
     nutrition: {
       kcal: Math.round(totalKcal),
       protein: Math.round(totalProtein),
@@ -541,9 +544,51 @@ function generateProceduralRecipe(availableIds, dietaryFilters = []) {
   };
 }
 
+/**
+ * Generates a structured 3-Day Zero-Waste Meal Plan
+ * Returns 6 distinct meals (3 Days x Lunch & Dinner)
+ */
+function generateWeeklyMealPlan(availableIds) {
+  const matches = findMatchingRecipes(availableIds);
+  const plan = [];
+
+  const days = ['Día 1', 'Día 2', 'Día 3'];
+  const types = [
+    { name: '☀️ Almuerzo Principal' },
+    { name: '🌙 Cena Cero Desperdicio' }
+  ];
+
+  let recipeIndex = 0;
+
+  days.forEach((day, dIdx) => {
+    types.forEach((type, tIdx) => {
+      let selectedRecipe = null;
+      if (matches[recipeIndex]) {
+        selectedRecipe = matches[recipeIndex].recipe;
+        recipeIndex++;
+      } else {
+        // Procedural fallback meal
+        selectedRecipe = generateProceduralRecipe(availableIds);
+      }
+
+      plan.push({
+        id: `plan_d${dIdx + 1}_t${tIdx + 1}`,
+        dayNumber: dIdx + 1,
+        dayLabel: day,
+        mealType: type.name,
+        recipe: selectedRecipe,
+        savedGrams: Math.floor(Math.random() * 180 + 120)
+      });
+    });
+  });
+
+  return plan;
+}
+
 // Exports for modular frontend usage
 window.INGREDIENT_DATABASE = INGREDIENT_DATABASE;
 window.CATEGORIES = CATEGORIES;
 window.PRESETS_RECIPES = PRESETS_RECIPES;
 window.calculateRecipeMatch = calculateRecipeMatch;
 window.generateProceduralRecipe = generateProceduralRecipe;
+window.generateWeeklyMealPlan = generateWeeklyMealPlan;
