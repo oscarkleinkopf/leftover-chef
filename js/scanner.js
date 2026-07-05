@@ -378,6 +378,23 @@ DEBES responder ÚNICAMENTE con un objeto JSON válido que siga exactamente la s
       onError(error.message || 'Error de red inesperado al conectar con Gemini.');
     }
   }
+
+  // Parses receipt text lines against the ingredient database
+  parseReceiptText(text) {
+    if (!text || typeof text !== 'string') return [];
+    const normalized = text.toLowerCase();
+    const foundIngredients = [];
+
+    const db = window.INGREDIENT_DATABASE || [];
+    db.forEach(item => {
+      const nameLower = item.name.toLowerCase();
+      if (normalized.includes(nameLower) || normalized.includes(item.id)) {
+        foundIngredients.push(item.id);
+      }
+    });
+
+    return [...new Set(foundIngredients)];
+  }
 }
 
 window.FridgeScanner = FridgeScanner;
