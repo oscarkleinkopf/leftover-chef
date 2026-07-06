@@ -1109,6 +1109,23 @@ document.addEventListener('DOMContentLoaded', () => {
       resetCookTimer('0', 0);
     }
 
+    // Kid Chef Step Check
+    const stepCard = document.querySelector('.cook-step-card');
+    const tempVal = settings ? settings.temp : '';
+    const speedVal = settings ? settings.speed : '';
+    const isSafeStep = (!tempVal || tempVal === 'Listo' || parseInt(tempVal) <= 50) &&
+                       (!speedVal || parseFloat(speedVal) <= 3);
+
+    if (isKidModeActive && isSafeStep) {
+      stepCard.classList.add('step-kid-friendly');
+      const badge = document.createElement('div');
+      badge.className = 'kid-badge';
+      badge.innerHTML = '⭐ PASO APTO PARA NIÑOS (Sin Calor)';
+      el.cookStepText.prepend(badge);
+    } else {
+      stepCard.classList.remove('step-kid-friendly');
+    }
+
     // Navigation change trigger next/finish
     if (state.cookStepIndex === recipe.steps.length - 1) {
       el.btnCookNext.innerHTML = '🏁 Finalizar Cocinado';
