@@ -727,6 +727,22 @@ document.addEventListener('DOMContentLoaded', () => {
       
       li.appendChild(icon);
       li.appendChild(text);
+
+      // AI Ingredient Swap Trigger
+      const swaps = window.INGREDIENT_SWAPS?.[req.id];
+      if (swaps && swaps.length > 0) {
+        const swapBtn = document.createElement('button');
+        swapBtn.className = 'swap-btn';
+        swapBtn.innerText = '🔄 Sustituir';
+        swapBtn.title = 'Ver alternativas gastronómicas';
+        swapBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const alt = swaps[0];
+          alert(`💡 Sustitución gastronómica para "${name}":\n\nPuedes sustituirlo por: ${alt.name}.\n\nConsejo Thermomix: ${alt.tip}`);
+        });
+        li.appendChild(swapBtn);
+      }
+
       el.detailIngredientsList.appendChild(li);
     });
 
