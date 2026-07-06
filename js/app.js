@@ -353,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderOfflineAccordion();
     renderRecipes();
+    saveProfiles();
   }
 
   // ==========================================
