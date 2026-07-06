@@ -151,6 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 3. STORAGE & CONFIG PERSISTENCE
   // ==========================================
   function loadPersistedData() {
+    // Load Profiles & Accounts
+    loadProfiles();
+
     // Load Settings
     const savedSettings = localStorage.getItem('leftover_chef_settings');
     if (savedSettings) {
