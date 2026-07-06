@@ -1559,6 +1559,178 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-print-meal-plan')?.addEventListener('click', () => window.print());
 
   // ==========================================
+  // 13. MULTI-USER PROFILES & REFRIGERATOR ISOLATION
+  // ==========================================
+  let profiles = [
+    { id: 'prof_default', name: 'Familia Principal', avatar: '👨‍👩‍👧‍👦', activeIngredients: [], bookmarks: [] }
+  ];
+  let activeProfileId = 'prof_default';
+
+  function loadProfiles() {
+    const savedProfiles = localStorage.getItem('leftover_chef_profiles');
+    if (savedProfiles) {
+      try { profiles = JSON.parse(savedProfiles); } catch (e) {}
+    }
+    const savedActiveId = localStorage.getItem('leftover_chef_active_profile_id');
+    if (savedActiveId && profiles.some(p => p.id === savedActiveId)) {
+      activeProfileId = savedActiveId;
+    }
+    syncCurrentProfileToState();
+  }
+
+  function saveProfiles() {
+    const activeProf = profiles.find(p => p.id === activeProfileId);
+    if (activeProf) {
+      activeProf.activeIngredients = Array.from(state.activeIngredients);
+      activeProf.bookmarks = Array.from(state.bookmarks);
+    }
+    localStorage.setItem('leftover_chef_profiles', JSON.stringify(profiles));
+    localStorage.setItem('leftover_chef_active_profile_id', activeProfileId);
+  }
+
+  function syncCurrentProfileToState() {
+    const activeProf = profiles.find(p => p.id === activeProfileId) || profiles[0];
+    if (activeProf) {
+      activeProfileId = activeProf.id;
+      state.activeIngredients = new Set(activeProf.activeIngredients || []);
+      state.bookmarks = new Set(activeProf.bookmarks || []);
+
+      const hAvatar = document.getElementById('header-profile-avatar');
+      const hName = document.getElementById('header-profile-name');
+      if (hAvatar) hAvatar.innerText = activeProf.avatar || '👨‍👩‍👧‍👦';
+      if (hName) hName.innerText = activeProf.name || 'Familia';
+    }
+  }
+
+  function switchProfile(targetProfileId) {
+    saveProfiles();
+    const target = profiles.find(p => p.id === targetProfileId);
+    if (!target) return;
+
+    activeProfileId = targetProfileId;
+    syncCurrentProfileToState();
+    saveProfiles();
+
+    updateIngredientsUI();
+    renderOfflineAccordion();
+    renderRecipes();
+    renderProfilesGrid();
+  }
+
+  function renderProfilesGrid() {
+    const grid = document.getElementById('profiles-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    profiles.forEach(prof => {
+      const isCurrent = prof.id === activeProfileId;
+      const count = (prof.activeIngredients || []).length;
+
+      const card = document.createElement('div');
+      card.className = `profile-card ${isCurrent ? 'active-profile' : ''}`;
+      card.innerHTML = `
+        <div class="profile-info">
+          <span class="profile-avatar">${prof.avatar}</span>
+          <div>
+            <div class="profile-name">${prof.name} ${isCurrent ? '<span style="font-size:10px; color:var(--neon-primary);">(Activo)</span>' : ''}</div>
+            <div class="profile-count">🥦 ${count} ingredientes en nevera</div>
+          </div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        if (!isCurrent) switchProfile(prof.id);
+      });
+
+      grid.appendChild(card);
+    });
+  }
+
+  // Profile Modal Event Listeners
+  const btnProfiles = document.getElementById('btn-profiles');
+  const modalProfiles = document.getElementById('modal-profiles');
+  const btnCloseProfiles = document.getElementById('btn-close-profiles');
+  const btnCloseProfilesFooter = document.getElementById('btn-close-profiles-footer');
+  const btnCreateProfile = document.getElementById('btn-create-profile');
+  const btnExportProfileJson = document.getElementById('btn-export-profile-json');
+  const importProfileFile = document.getElementById('import-profile-file');
+
+  if (btnProfiles) {
+    btnProfiles.addEventListener('click', () => {
+      renderProfilesGrid();
+      modalProfiles.classList.remove('hidden');
+    });
+  }
+
+  if (btnCloseProfiles) btnCloseProfiles.addEventListener('click', () => modalProfiles.classList.add('hidden'));
+  if (btnCloseProfilesFooter) btnCloseProfilesFooter.addEventListener('click', () => modalProfiles.classList.add('hidden'));
+
+  if (btnCreateProfile) {
+    btnCreateProfile.addEventListener('click', () => {
+      const nameInput = document.getElementById('new-profile-name');
+      const avatarSelect = document.getElementById('new-profile-avatar');
+      const name = nameInput.value.trim();
+      if (!name) {
+        alert('Escribe un nombre para la familia o refrigerador.');
+        return;
+      }
+
+      const newId = 'prof_' + Date.now();
+      const newProf = {
+        id: newId,
+        name: name,
+        avatar: avatarSelect.value || '👨‍👩‍👧‍👦',
+        activeIngredients: [],
+        bookmarks: []
+      };
+
+      profiles.push(newProf);
+      nameInput.value = '';
+      switchProfile(newId);
+      alert(`✨ ¡Perfil "${name}" creado con éxito y activado!`);
+    });
+  }
+
+  if (btnExportProfileJson) {
+    btnExportProfileJson.addEventListener('click', () => {
+      saveProfiles();
+      const currentProf = profiles.find(p => p.id === activeProfileId);
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentProf, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `leftover_chef_${currentProf.name.replace(/\s+/g, '_').toLowerCase()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    });
+  }
+
+  if (importProfileFile) {
+    importProfileFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          if (imported.name && Array.isArray(imported.activeIngredients)) {
+            imported.id = 'prof_' + Date.now();
+            profiles.push(imported);
+            switchProfile(imported.id);
+            alert(`📥 ¡Perfil "${imported.name}" importado con éxito!`);
+          } else {
+            alert('❌ El archivo JSON no tiene un formato válido de perfil.');
+          }
+        } catch (err) {
+          alert('❌ Error al leer el archivo JSON.');
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // ==========================================
   // 12. BOOTSTRAP INITIALIZATION
   // ==========================================
   loadPersistedData();
