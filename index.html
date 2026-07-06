@@ -280,6 +280,62 @@
     </div>
   </div>
 
+  <!-- MULTI-USER PROFILES & REFRIGERATORS MODAL -->
+  <div class="modal-overlay hidden" id="modal-profiles">
+    <div class="modal glass animate-modal">
+      <div class="modal-header">
+        <div>
+          <h2>👥 Cuentas de Usuario y Perfiles de Familia</h2>
+          <p class="subtitle" style="font-size: 0.85rem; color: var(--text-secondary);">Mantén separados los ingredientes de diferentes refrigeradores o familias</p>
+        </div>
+        <button class="close-modal-btn" id="btn-close-profiles">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Profiles List Grid -->
+        <div class="profiles-list-section">
+          <h3>Perfiles de Familia Activos</h3>
+          <div class="profiles-grid" id="profiles-grid">
+            <!-- Dynamically populated profile cards -->
+          </div>
+        </div>
+
+        <!-- Create New Profile Form -->
+        <div class="settings-option-card" style="margin-top: 10px;">
+          <h4>➕ Crear Nuevo Perfil de Familia / Refrigerador</h4>
+          <div class="form-row" style="display: flex; gap: 10px;">
+            <input type="text" id="new-profile-name" placeholder="Ej. Familia Pérez / Casa de Playa..." style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--glass-border); color: #fff; padding: 10px; border-radius: var(--border-radius-sm);">
+            <select id="new-profile-avatar" class="custom-select">
+              <option value="👨‍👩‍👧‍👦">👨‍👩‍👧‍👦 Familia</option>
+              <option value="🏡">🏡 Casa</option>
+              <option value="🏝️">🏝️ Playa</option>
+              <option value="🥑">🥑 Fit / Veggie</option>
+              <option value="🍳">🍳 Gourmet</option>
+            </select>
+          </div>
+          <button id="btn-create-profile" class="btn btn-secondary btn-sm" style="margin-top: 8px;">Guardar Nuevo Perfil</button>
+        </div>
+
+        <!-- Import / Export Profile Data -->
+        <div class="settings-option-card">
+          <h4>📦 Compartir o Transferir Perfil entre Celulares</h4>
+          <p style="font-size: 12px; color: var(--text-muted);">Exporta los ingredientes de tu nevera como archivo JSON para cargarlos en otro teléfono.</p>
+          <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <button id="btn-export-profile-json" class="btn btn-tertiary btn-sm">📥 Exportar Perfil JSON</button>
+            <label class="btn btn-tertiary btn-sm" style="cursor: pointer;">
+              📤 Importar JSON
+              <input type="file" id="import-profile-file" accept=".json" style="display: none;">
+            </label>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btn-close-profiles-footer">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- RECIPE DETAIL MODAL -->
   <div class="modal-overlay hidden" id="modal-recipe-detail">
     <div class="modal glass modal-large animate-modal">
