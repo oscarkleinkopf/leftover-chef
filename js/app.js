@@ -1469,6 +1469,91 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Kid Chef Toggle Listener
+  let isKidModeActive = false;
+  const btnToggleKidMode = document.getElementById('btn-toggle-kid-mode');
+  const kidModeLabel = document.getElementById('kid-mode-label');
+
+  if (btnToggleKidMode) {
+    btnToggleKidMode.addEventListener('click', () => {
+      isKidModeActive = !isKidModeActive;
+      btnToggleKidMode.classList.toggle('kid-mode-active', isKidModeActive);
+      if (kidModeLabel) kidModeLabel.innerText = isKidModeActive ? 'Modo Niños: ON' : 'Modo Niños: OFF';
+      if (state.selectedRecipe) setupCookStep();
+    });
+  }
+
+  // 3-Day Meal Plan Handlers
+  const btnMealPlan = document.getElementById('btn-meal-plan');
+  const modalMealPlan = document.getElementById('modal-meal-plan');
+  const btnCloseMealPlan = document.getElementById('btn-close-meal-plan');
+  const btnCloseMealPlanFooter = document.getElementById('btn-close-meal-plan-footer');
+  const mealPlanTimeline = document.getElementById('meal-plan-timeline');
+
+  if (btnMealPlan) {
+    btnMealPlan.addEventListener('click', () => {
+      const activeIds = Array.from(state.activeIngredients);
+      if (activeIds.length === 0) {
+        alert('Selecciona o escanea ingredientes antes de generar tu plan semanal Cero Desperdicio.');
+        return;
+      }
+      const plan = window.generateWeeklyMealPlan(activeIds);
+      renderMealPlan(plan);
+      modalMealPlan.classList.remove('hidden');
+    });
+  }
+
+  if (btnCloseMealPlan) btnCloseMealPlan.addEventListener('click', () => modalMealPlan.classList.add('hidden'));
+  if (btnCloseMealPlanFooter) btnCloseMealPlanFooter.addEventListener('click', () => modalMealPlan.classList.add('hidden'));
+
+  function renderMealPlan(plan) {
+    if (!mealPlanTimeline) return;
+    mealPlanTimeline.innerHTML = '';
+
+    const grouped = {};
+    plan.forEach(item => {
+      if (!grouped[item.dayLabel]) grouped[item.dayLabel] = [];
+      grouped[item.dayLabel].push(item);
+    });
+
+    Object.keys(grouped).forEach(day => {
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'meal-day-group';
+
+      const header = document.createElement('div');
+      header.className = 'meal-day-header';
+      header.innerHTML = `<span>${day}</span> <span style="font-size:12px; color:var(--text-muted);">🌱 Rescate: ~${grouped[day][0].savedGrams * 2}g de alimentos</span>`;
+      groupDiv.appendChild(header);
+
+      const cardsRow = document.createElement('div');
+      cardsRow.className = 'meal-cards-row';
+
+      grouped[day].forEach(meal => {
+        const card = document.createElement('div');
+        card.className = 'meal-card';
+        card.style.cursor = 'pointer';
+        card.innerHTML = `
+          <div class="meal-card-type">${meal.mealType}</div>
+          <div class="meal-card-title">${meal.recipe.title}</div>
+          <div class="meal-card-meta">⏱️ ${meal.recipe.prepTime || '20 min'} | 👥 ${meal.recipe.portions || '3 raciones'}</div>
+        `;
+        card.addEventListener('click', () => {
+          modalMealPlan.classList.add('hidden');
+          openRecipeDetail(meal.recipe, 100);
+        });
+        cardsRow.appendChild(card);
+      });
+
+      groupDiv.appendChild(cardsRow);
+      mealPlanTimeline.appendChild(groupDiv);
+    });
+  }
+
+  // PDF Print Triggers
+  document.getElementById('btn-print-recipe-pdf')?.addEventListener('click', () => window.print());
+  document.getElementById('btn-print-bookmarks')?.addEventListener('click', () => window.print());
+  document.getElementById('btn-print-meal-plan')?.addEventListener('click', () => window.print());
+
   // ==========================================
   // 12. BOOTSTRAP INITIALIZATION
   // ==========================================
