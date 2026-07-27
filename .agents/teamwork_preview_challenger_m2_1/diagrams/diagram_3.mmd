@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant DevA as Device A (Mobile PWA)
+    participant IDBA as Device A IndexedDB
+    participant Cloud as Cloud Firestore
+    participant DevB as Device B (Tablet/Desktop)
+
+    Note over DevA, DevB: Both devices authenticated as same User UID
+    DevA->>DevA: User adds "Aguacate" while offline
+    DevA->>IDBA: Write to local persistent cache
+    DevA->>DevA: Optimistic UI update (Active Ingredients Cloud + UI)
+    Note over DevA: Connection Restored (online event)
+    DevA->>Cloud: Flush mutation queue to /users/{uid}/inventory/aguacate
+    Cloud->>Cloud: Validate Security Rules & Write Document
+    Cloud-->>DevA: ServerTimestamp ACK (Mark Synced)
+    Cloud-->>DevB: Realtime Snapshot Event (onSnapshot triggered)
+    DevB->>DevB: Update state.activeIngredients ("Aguacate")
+    DevB->>DevB: Re-render Ingredients Cloud & Recipes Grid (< 200ms)

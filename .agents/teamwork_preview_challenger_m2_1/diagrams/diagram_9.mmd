@@ -1,0 +1,41 @@
+sequenceDiagram
+    autonumber
+    actor User as Home Chef
+    participant PWA as Leftover Chef PWA
+    participant Compiler as TMGC-v2 Compiler
+    participant WS as Local mTLS WebSocket
+    participant TMX as Thermomix Appliance (TM6/TM7)
+    participant Cloud as Cookidoo Cloud API
+
+    User->>PWA: Select Recipe & Tap "Cook on Thermomix"
+    PWA->>Compiler: Request Execution Payload
+    Compiler->>Compiler: Transform Ingredients & Steps to TMGC-v2 Format
+    
+    opt Cookidoo Cloud Sync (Optional)
+        PWA->>Cloud: POST /api/v1/user/planner (Schedule Recipe)
+        Cloud-->>PWA: 200 OK (Synced to Cookidoo Calendar)
+    end
+
+    PWA->>WS: Initiate Session (Verify mTLS Handshake)
+    WS-->>PWA: Handshake Accepted (Session Established)
+    
+    PWA->>WS: Send TMGC-v2 Binary Payload
+    WS->>TMX: Transfer Payload to Appliance Buffer
+    TMX-->>WS: ACK (Payload Validated & Loaded)
+    WS-->>PWA: Display "Ready on Thermomix" Prompt
+    
+    User->>TMX: Tap "Start Cooking" on Appliance Screen
+    
+    loop Real-Time Telemetry (5 Hz)
+        TMX->>WS: Push Telemetry Packet (Temp, RPM, Scale, Lid Lock)
+        WS->>PWA: Update Live Cook Dashboard (Gauges & Step Progress)
+    end
+
+    alt Scale Step Reached
+        TMX->>WS: Telemetry: Scale Weight Updating (e.g. 150g / 500g)
+        WS->>PWA: Render Real-time Scale Progress Bar
+    end
+
+    TMX->>WS: Event: Recipe Step Completed
+    WS->>PWA: Auto-Advance PWA Step Display & Play Audio Prompt
+    PWA-->>User: Hands-Free Voice / Audio Step Transition

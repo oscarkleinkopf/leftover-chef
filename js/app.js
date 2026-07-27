@@ -27,7 +27,62 @@ document.addEventListener('DOMContentLoaded', () => {
       geminiModeActive: false,
       geminiApiKey: '',
       defaultTmModel: 'TM6'
-    }
+    },
+    roadmap: [
+      {
+        id: 'v2.0',
+        version: 'v2.0',
+        title: 'v2.0 Cloud Firebase & Smart Planner',
+        badgeText: 'En Desarrollo',
+        statusClass: 'status-in-progress',
+        baselineVotes: 142,
+        features: [
+          'Autenticación multidispositivo (Google, Email, Anónimo)',
+          'Sincronización en tiempo real de despensa en Cloud Firestore',
+          'Planificador semanal inteligente de 7 días y exportación WhatsApp/PDF'
+        ]
+      },
+      {
+        id: 'v3.0',
+        version: 'v3.0',
+        title: 'v3.0 Real-Time Computer Vision',
+        badgeText: 'Planificado',
+        statusClass: 'status-planned',
+        baselineVotes: 98,
+        features: [
+          'Detección visual a 30 FPS mediante TensorFlow.js (WebGL/WebGPU)',
+          'Bounding boxes con indicador neón de confianza en cámara en vivo',
+          'Integración híbrida con Gemini 1.5 Flash para OCR y fechas de caducidad'
+        ]
+      },
+      {
+        id: 'v4.0',
+        version: 'v4.0',
+        title: 'v4.0 Red Social de Recetas',
+        badgeText: 'Evaluación',
+        statusClass: 'status-evaluating',
+        baselineVotes: 76,
+        features: [
+          'Perfiles de chef creador, insignias Cero Desperdicio y estadísticas de CO₂',
+          'Forking y remixing de recetas con control de versiones estilo Git',
+          'Feed global de la comunidad y valoración con moderación AI'
+        ]
+      },
+      {
+        id: 'v5.0',
+        version: 'v5.0',
+        title: 'v5.0 Thermomix Cookidoo IoT Sync',
+        badgeText: 'Evaluación',
+        statusClass: 'status-evaluating',
+        baselineVotes: 115,
+        features: [
+          'Conexión directa IoT via BLE 5.0 y mTLS WebSocket con Thermomix TM6/TM7',
+          'Inyección de instrucciones guiadas (velocidad, temp °C, balanza tare)',
+          'Sincronización bi-direccional con la plataforma oficial Vorwerk Cookidoo'
+        ]
+      }
+    ],
+    roadmapVotes: {}
   };
 
   // Instantiate Photo Scanner
@@ -50,6 +105,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Header Actions
     btnSettings: document.getElementById('btn-settings'),
     btnBookmarks: document.getElementById('btn-bookmarks'),
+    btnRoadmap: document.getElementById('btn-roadmap'),
+    
+    // Roadmap Modal
+    modalRoadmap: document.getElementById('modal-roadmap'),
+    btnCloseRoadmap: document.getElementById('btn-close-roadmap'),
+    btnCloseRoadmapFooter: document.getElementById('btn-close-roadmap-footer'),
+    roadmapCardsContainer: document.getElementById('roadmap-cards-container'),
     
     // Scanner
     dropzone: document.getElementById('dropzone'),
@@ -164,6 +226,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedBookmarks = localStorage.getItem('leftover_chef_bookmarks');
     if (savedBookmarks) {
       state.bookmarks = JSON.parse(savedBookmarks);
+    }
+
+    // Load Roadmap Votes
+    const savedVotes = localStorage.getItem('leftoverchef_roadmap_votes');
+    if (savedVotes) {
+      try {
+        state.roadmapVotes = JSON.parse(savedVotes);
+      } catch (e) {
+        state.roadmapVotes = {};
+      }
     }
 
     // Sync UI with Loaded Settings
@@ -1394,6 +1466,72 @@ document.addEventListener('DOMContentLoaded', () => {
   el.btnCloseBookmarks.addEventListener('click', () => {
     el.modalBookmarks.classList.add('hidden');
   });
+
+  // Roadmap Modal Handlers & Renderer
+  function renderRoadmap() {
+    if (!el.roadmapCardsContainer) return;
+    el.roadmapCardsContainer.innerHTML = '';
+
+    state.roadmap.forEach(phase => {
+      const isVoted = !!state.roadmapVotes[phase.id];
+      const totalVotes = phase.baselineVotes + (isVoted ? 1 : 0);
+
+      const card = document.createElement('div');
+      card.className = 'roadmap-phase-card';
+
+      const featuresHtml = phase.features
+        .map(feat => `<li class="roadmap-feature-item"><span>${feat}</span></li>`)
+        .join('');
+
+      card.innerHTML = `
+        <div>
+          <div class="roadmap-card-header">
+            <div class="roadmap-card-header-top">
+              <span class="roadmap-status-badge ${phase.statusClass}">${phase.badgeText}</span>
+            </div>
+            <h3>${phase.title}</h3>
+          </div>
+          <ul class="roadmap-feature-list">
+            ${featuresHtml}
+          </ul>
+        </div>
+        <button class="btn-vote ${isVoted ? 'voted' : ''}" data-version-id="${phase.id}">
+          <span>${isVoted ? '🚀 Votado' : '👍 Votar'}</span>
+          <span>(${totalVotes})</span>
+        </button>
+      `;
+
+      const voteBtn = card.querySelector('.btn-vote');
+      voteBtn.addEventListener('click', () => {
+        toggleRoadmapVote(phase.id);
+      });
+
+      el.roadmapCardsContainer.appendChild(card);
+    });
+  }
+
+  function toggleRoadmapVote(versionId) {
+    state.roadmapVotes[versionId] = !state.roadmapVotes[versionId];
+    localStorage.setItem('leftoverchef_roadmap_votes', JSON.stringify(state.roadmapVotes));
+    renderRoadmap();
+  }
+
+  if (el.btnRoadmap) {
+    el.btnRoadmap.addEventListener('click', () => {
+      renderRoadmap();
+      el.modalRoadmap.classList.remove('hidden');
+    });
+  }
+  if (el.btnCloseRoadmap) {
+    el.btnCloseRoadmap.addEventListener('click', () => {
+      el.modalRoadmap.classList.add('hidden');
+    });
+  }
+  if (el.btnCloseRoadmapFooter) {
+    el.btnCloseRoadmapFooter.addEventListener('click', () => {
+      el.modalRoadmap.classList.add('hidden');
+    });
+  }
 
   // Recipe Detail Modal Close
   el.btnCloseDetail.addEventListener('click', () => {

@@ -1,0 +1,44 @@
+graph TB
+    subgraph PWA ["Leftover Chef PWA (Client)"]
+        UI5["Guided Cook UI & Telemetry Visualizer"]
+        IoTManager["IoT Connection Manager"]
+        Compiler["TMGC-v2 Payload Compiler"]
+        SyncClient["Cookidoo OAuth & Sync Client"]
+    end
+
+    subgraph LocalBridge ["Local Connectivity Layer (Network / BLE)"]
+        BLE["BLE 5.0 Interface"]
+        WSLocal["Local WebSocket / mTLS Server"]
+    end
+
+    subgraph Appliance ["Thermomix Appliance Hardware (TM6 / TM7)"]
+        Microcontroller["Core Appliance Controller (RTOS)"]
+        BladeMotor["Blade Motor & Reverse Drive"]
+        Heater["Heating Element & Temp Sensor"]
+        ScaleSensor["Precision Weight Sensors (0.1g)"]
+        ScreenUI["Thermomix Touch Display"]
+        SafetyLock["Lid Lock & Thermal Safety Sensor"]
+    end
+
+    subgraph External ["External Cloud Platform"]
+        CookidooCloud["Vorwerk Cookidoo API Gateway"]
+    end
+
+    UI5 --> IoTManager
+    UI5 --> Compiler
+    UI5 --> SyncClient
+
+    Compiler --> WSLocal
+    IoTManager --> BLE
+    IoTManager --> WSLocal
+
+    BLE --> Microcontroller
+    WSLocal --> Microcontroller
+
+    Microcontroller --> BladeMotor
+    Microcontroller --> Heater
+    Microcontroller --> ScaleSensor
+    Microcontroller --> ScreenUI
+    Microcontroller --> SafetyLock
+
+    SyncClient <==>|HTTPS / OAuth2| CookidooCloud

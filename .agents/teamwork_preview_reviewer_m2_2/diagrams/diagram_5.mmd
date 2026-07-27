@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant Cam as Web Camera Stream
+    participant Worker as TF.js Web Worker
+    participant Renderer as Canvas Box Renderer
+    participant UI as Live Detection Tray
+    participant State as Application State
+    participant Cloud as Firestore DB
+
+    User->>Cam: Open Live Camera Vision Scanner
+    Cam->>Worker: Stream Frame (t_0, 1080p)
+    Worker->>Worker: Downsample to 416x416 Tensor & Run YOLO Inference
+    Worker-->>Renderer: Yield Bounding Boxes [{name: "Tomate", bbox: [40,50,120,130], conf: 0.88}]
+    Renderer->>Renderer: Scale Coordinates & Draw Neon Green Bounding Box
+    Worker-->>UI: Update Live Detection Chips ("Tomate", "Queso")
+    
+    User->>UI: Tap "Confirmar e Insertar (2 items)"
+    UI->>Cam: Stop Video Track Stream
+    UI->>State: Add "tomate", "queso" to state.activeIngredients
+    State->>Cloud: Batch Write /users/{uid}/inventory/{id}
+    State->>UI: Re-render Active Ingredients Cloud & Recipe Match Grid

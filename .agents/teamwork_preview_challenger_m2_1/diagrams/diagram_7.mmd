@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor Creator as Creator (User A)
+    participant Studio as Recipe Studio (PWA)
+    participant Mod as AI Safety Service
+    participant DB as Cloud Firestore
+    participant Graph as Social Graph Engine
+    participant Feed as Feed Cache Engine
+    participant FCM as Push Notification Service
+    actor Follower as Follower (User B)
+
+    Creator->>Studio: Submit New / Forked Recipe
+    Studio->>Mod: POST /api/v4/recipes/moderate (Content & Image)
+    alt Violation Detected
+        Mod-->>Studio: 400 Rejected (Safety Policy Violation)
+        Studio-->>Creator: Display Modification Warning
+    else Clean Content
+        Mod-->>Studio: 200 Approved
+        Studio->>DB: Write Document to /recipes/{recipeId}
+        DB-->>Studio: Confirm Write Success
+        Studio-->>Creator: Display "Published Successfully!"
+        
+        DB->>Graph: Trigger OnPublish Event (Author ID)
+        Graph->>DB: Fetch Author Followers List
+        
+        par Fan-Out Feed Update
+            Graph->>Feed: Write Post ID to Follower Feeds
+            Feed->>DB: Update /users/{followerId}/feed
+        and Trigger Push Notification
+            Graph->>FCM: Dispatch Event CREATOR_POSTED
+            FCM->>Follower: Send Push Notification (Service Worker)
+        end
+        
+        Follower->>Follower: Open App & View Real-Time Feed
+    end

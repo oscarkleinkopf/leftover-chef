@@ -15,5 +15,9 @@
     "cooking"
   ],
   "author": "Antigravity Chef",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "jsdom": "^29.1.1",
+    "mermaid": "^11.16.0"
+  }
 }

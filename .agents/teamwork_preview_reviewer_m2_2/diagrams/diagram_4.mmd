@@ -1,0 +1,39 @@
+graph TB
+    subgraph Hardware_WebAPI ["Browser & Hardware Layer"]
+        Camera["HTML5 Media Capture API<br/>(navigator.mediaDevices.getUserMedia)"]
+        VideoElem["HTML5 Video Element<br/>(#vision-video)"]
+        CanvasOverlay["Canvas Overlay Element<br/>(#vision-overlay)"]
+    end
+
+    subgraph Edge_Inference ["Tier 1: Local Edge Engine (Web Worker)"]
+        OffscreenCanvas["Offscreen Canvas Frame Grabber"]
+        Worker["InferenceWorker.js (Web Worker)"]
+        TFJS["TensorFlow.js WebGL / WebGPU"]
+        YOLO["Quantized YOLOv8-nano Food Model"]
+        NMS["Non-Max Suppression & IoU Tracker"]
+    end
+
+    subgraph Cloud_Inference ["Tier 2: Cloud High-Precision Engine"]
+        GeminiAPI["Google Gemini 1.5 Flash API<br/>(Multimodal REST Endpoint)"]
+    end
+
+    subgraph State_Integration ["Leftover Chef Application Core"]
+        StateEngine["Central State (js/app.js)"]
+        FirestoreSync["Firestore Inventory Collection"]
+        UICloud["Active Ingredients Cloud UI"]
+    end
+
+    Camera -->|Video Track Stream| VideoElem
+    VideoElem -->|Frame Capture| OffscreenCanvas
+    OffscreenCanvas -->|ImageData Buffer| Worker
+    Worker --> TFJS
+    TFJS --> YOLO
+    YOLO --> NMS
+    NMS -->|Bounding Boxes + Confidence| CanvasOverlay
+    
+    VideoElem -.->|High-Res Snapshot on Trigger| GeminiAPI
+    GeminiAPI -.->|JSON Ingredient Taxonomy| StateEngine
+
+    NMS -->|Batch Verified Items| StateEngine
+    StateEngine --> UICloud
+    StateEngine -->|Firestore Batch Write| FirestoreSync

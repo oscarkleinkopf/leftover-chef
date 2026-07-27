@@ -1,0 +1,61 @@
+graph TD
+    classDef v1Style fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff;
+    classDef v2Style fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef v3Style fill:#1e1b4b,stroke:#8b5cf6,stroke-width:2px,color:#fff;
+    classDef v4Style fill:#312e81,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef v5Style fill:#022c22,stroke:#14b8a6,stroke-width:2px,color:#fff;
+
+    subgraph Phase1["Phase 1.0: Current Client-Side SPA (Offline-First)"]
+        UI_V1["Vanilla JS SPA Shell<br/>(index.html / app.js / styles.css)"]:::v1Style
+        SW_V1["PWA Service Worker<br/>(Cache-First / leftover-chef-v1)"]:::v1Style
+        LOCAL_STORAGE["Browser LocalStorage<br/>(Settings / Bookmarks / Profiles)"]:::v1Style
+        GEMINI_V1["Gemini AI REST API<br/>(Cloud Prompting Engine)"]:::v1Style
+        
+        UI_V1 <--> SW_V1
+        UI_V1 <--> LOCAL_STORAGE
+        UI_V1 -->|HTTP POST| GEMINI_V1
+    end
+
+    subgraph Phase2["Phase 2.0: Cloud Core & Smart Planner"]
+        FIREBASE_AUTH["Firebase Auth<br/>(Anonymous / Email / Google OAuth)"]:::v2Style
+        FIRESTORE["Cloud Firestore Database<br/>(User Profiles, Meal Plans, Inventory)"]:::v2Style
+        CLOUD_FUNCTIONS["Firebase Cloud Functions<br/>(Shopping List Aggregation & WhatsApp Sync)"]:::v2Style
+        SYNC_ENGINE["Local-First Sync Engine<br/>(Offline Queue & Background Re-Sync)"]:::v2Style
+
+        UI_V1 <--> SYNC_ENGINE
+        SYNC_ENGINE <--> FIREBASE_AUTH
+        SYNC_ENGINE <--> FIRESTORE
+        FIRESTORE <--> CLOUD_FUNCTIONS
+    end
+
+    subgraph Phase3["Phase 3.0: Real-Time Edge Computer Vision"]
+        TFJS_ENGINE["TensorFlow.js / WebGPU Engine<br/>(Client-Side Edge Inference)"]:::v3Style
+        CANVAS_SCANNER["Real-Time Canvas Stream<br/>(30 FPS Laser & Bounding Box)"]:::v3Style
+        MODEL_CACHE["IndexedDB Model Cache<br/>(YOLOv8-Nano / MobileNetV3)"]:::v3Style
+
+        UI_V1 <--> CANVAS_SCANNER
+        CANVAS_SCANNER <--> TFJS_ENGINE
+        TFJS_ENGINE <--> MODEL_CACHE
+    end
+
+    subgraph Phase4["Phase 4.0: Recipe Social Network"]
+        COMMUNITY_FEED["Global Recipe Feed & Ratings"]:::v4Style
+        SOCIAL_GRAPH["Followers & Activity Stream"]:::v4Style
+        CDN_STORAGE["Firebase Cloud Storage<br/>(Recipe Photos & Video Shorts)"]:::v4Style
+        MODERATION_AI["Automated Moderation Service<br/>(Safety & Content Validation)"]:::v4Style
+
+        FIRESTORE <--> COMMUNITY_FEED
+        FIRESTORE <--> SOCIAL_GRAPH
+        COMMUNITY_FEED <--> CDN_STORAGE
+        CDN_STORAGE --> MODERATION_AI
+    end
+
+    subgraph Phase5["Phase 5.0: Thermomix IoT & AI Medical Nutrition"]
+        COOKIDOO_API["Vorwerk Cookidoo API Gateway<br/>(OAuth2 PKCE Guided Cooking)"]:::v5Style
+        TM6_APPLIANCE["Thermomix TM6/TM7 Hardware<br/>(Direct Screen Recipe Injection)"]:::v5Style
+        METABOLIC_AI["AI Medical Nutrition Engine<br/>(Glycemic, Allergen & Micro-Nutrient Filters)"]:::v5Style
+
+        UI_V1 <--> METABOLIC_AI
+        METABOLIC_AI <--> COOKIDOO_API
+        COOKIDOO_API <-->|WebSocket / REST| TM6_APPLIANCE
+    end

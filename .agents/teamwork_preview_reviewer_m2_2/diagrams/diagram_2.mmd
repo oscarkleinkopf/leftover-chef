@@ -1,0 +1,27 @@
+graph TB
+    subgraph Client_Browser_PWA ["Client SPA / PWA Container"]
+        UI["UI Layer (index.html / Cyberpunk Theme)"]
+        State["Central State Management (js/app.js)"]
+        SyncManager["Cloud Sync Manager"]
+        AuthModule["Firebase Auth Module"]
+        
+        subgraph Offline_Cache ["Local Persistence Engine"]
+            IDB[(IndexedDB Local Cache)]
+            TabManager["Multi-Tab Lock Manager"]
+        end
+    end
+
+    subgraph Firebase_Cloud ["Firebase Cloud Infrastructure"]
+        FirebaseAuth["Firebase Authentication Service<br/>(Google, Email, Anon, Apple)"]
+        FirestoreCloud[("Cloud Firestore<br/>NoSQL Database")]
+        SecRules["Firestore Security Rules<br/>(User Isolation)"]
+    end
+
+    UI <--> State
+    State <--> SyncManager
+    SyncManager <--> AuthModule
+    AuthModule <-->|Token & Session| FirebaseAuth
+    SyncManager <-->|Offline Read/Write| IDB
+    IDB <--> TabManager
+    SyncManager <==>|Realtime WebSockets / onSnapshot| FirestoreCloud
+    FirestoreCloud <--> SecRules

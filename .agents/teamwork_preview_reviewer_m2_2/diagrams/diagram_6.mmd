@@ -1,0 +1,54 @@
+graph TB
+    subgraph Client ["Client Layer (PWA / Browser)"]
+        UI["Social UI Module"]
+        FeedView["Feed & Discovery View"]
+        ProfileView["User Profile Component"]
+        Studio["Recipe Fork/Publish Studio"]
+        NotifDrawer["Real-time Notification Drawer"]
+        SW["Service Worker (Push API & Cache)"]
+    end
+
+    subgraph API ["API & Gateway Layer"]
+        Gateway["Firebase API Gateway / Cloud Functions"]
+        AuthService["Firebase Auth Manager"]
+    end
+
+    subgraph Services ["Backend Core Services"]
+        FeedEngine["Feed Generation & Ranking Engine"]
+        SocialGraph["Social Graph Service"]
+        ForkEngine["Recipe Lineage & Forking Engine"]
+        ModService["Gemini AI Content Moderation"]
+        NotifEngine["Push & In-App Notification Engine"]
+    end
+
+    subgraph Data ["Data & Storage Layer"]
+        FirestoreDB[("Cloud Firestore")]
+        RedisFeed[("Redis Feed Cache")]
+        CloudStorage[("Cloud Storage - Photos")]
+        FCM["Firebase Cloud Messaging (FCM)"]
+    end
+
+    UI --> FeedView
+    UI --> ProfileView
+    UI --> Studio
+    UI --> NotifDrawer
+
+    FeedView --> Gateway
+    ProfileView --> Gateway
+    Studio --> Gateway
+    NotifDrawer --> SW
+
+    Gateway --> AuthService
+    Gateway --> FeedEngine
+    Gateway --> SocialGraph
+    Gateway --> ForkEngine
+    Gateway --> ModService
+
+    FeedEngine --> RedisFeed
+    FeedEngine --> FirestoreDB
+    SocialGraph --> FirestoreDB
+    ForkEngine --> FirestoreDB
+    ModService --> CloudStorage
+    NotifEngine --> FCM
+    NotifEngine --> FirestoreDB
+    FCM --> SW
