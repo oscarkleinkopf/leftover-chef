@@ -13,6 +13,10 @@
   <!-- PWA Manifest & Meta -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#10b981">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icon.svg">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <!-- SEO & Favicon Meta -->
   <meta name="description" content="Genera exquisitas recetas para tu Thermomix TM5/TM6 escaneando las fotos de tu refrigerador. Calcula nutrición, cocina paso a paso con asistente de voz y temporizadores.">
@@ -42,7 +46,7 @@
           <span id="header-profile-name">Familia Principal</span>
           <span style="font-size: 10px;">▾</span>
         </button>
-        <button id="btn-roadmap" class="icon-btn" title="Roadmap de Mejoras">🚀</button>
+        <button id="btn-roadmap" class="icon-btn" title="Roadmap de Mejoras" aria-label="Abrir roadmap de mejoras" aria-haspopup="dialog" aria-controls="modal-roadmap">🚀</button>
         <button id="btn-bookmarks" class="icon-btn" title="Recetas Guardadas">
           <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"/></svg>
         </button>
@@ -339,17 +343,17 @@
 
   <!-- STRATEGIC ROADMAP MODAL -->
   <div class="modal-overlay hidden" id="modal-roadmap">
-    <div class="modal glass modal-large animate-modal">
+    <div class="modal glass modal-large animate-modal" role="dialog" aria-modal="true" aria-labelledby="roadmap-modal-title">
       <div class="modal-header">
         <div>
-          <h2>🗺️ Roadmap Estratégico - Próximas Versiones</h2>
+          <h2 id="roadmap-modal-title">🗺️ Roadmap Estratégico - Próximas Versiones</h2>
           <p class="subtitle" style="font-size: 0.85rem; color: var(--text-secondary);">Descubre las características planificadas y vota por tus prioritarias</p>
         </div>
-        <button class="close-modal-btn" id="btn-close-roadmap">&times;</button>
+        <button class="close-modal-btn" id="btn-close-roadmap" aria-label="Cerrar roadmap">&times;</button>
       </div>
       
       <div class="modal-body">
-        <div id="roadmap-cards-container" class="roadmap-timeline-grid">
+        <div id="roadmap-cards-container" class="roadmap-timeline-grid" role="list" aria-label="Versiones del roadmap">
           <!-- Populated dynamically via JS -->
         </div>
       </div>

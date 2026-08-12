@@ -63,18 +63,20 @@ Orchestrate the strategic roadmap integration for Leftover Chef: creating ROADMA
 | Challenger 2 (M2) | teamwork_preview_challenger | Cross-Architecture Stress Testing | completed | c7bd2ef5-8f6d-4c2e-ba22-4dd7fdde5fd7 |
 | Auditor 1 (M2) | teamwork_preview_auditor | Forensic Integrity Verification | completed | 73bbc871-a1be-4a8a-9658-8066f70792aa |
 | Worker 1 (M3) | teamwork_preview_worker | Implement Roadmap UI & LocalStorage | completed | c9cbb2cf-6833-4315-9dba-fb90461d8378 |
-| Reviewer 1 (M3) | teamwork_preview_reviewer | Roadmap UI & Functionality Review | in-progress | 683e6d23-c65d-4578-88db-41ba18e6d48f |
-| Reviewer 2 (M3) | teamwork_preview_reviewer | UI Quality & PWA Verification | in-progress | 38b19208-b15f-4295-a522-9e4df842efe9 |
-| Challenger 1 (M3) | teamwork_preview_challenger | Empirical UI & Voting Stress Verification | in-progress | d3b5c952-b057-44f9-a0e8-1dfe42575b6f |
-| Challenger 2 (M3) | teamwork_preview_challenger | Accessibility & Edge Case Verification | in-progress | 148a03cb-1644-4f52-9ca1-427041c4bf7f |
-| Auditor 1 (M3) | teamwork_preview_auditor | Forensic Integrity Audit | in-progress | c334f5ab-d8f4-46d8-bbca-2d3b04df4ab6 |
+| Reviewer 1 (M3) | teamwork_preview_reviewer | Roadmap UI & Functionality Review | completed | 683e6d23-c65d-4578-88db-41ba18e6d48f |
+| Reviewer 2 (M3) | teamwork_preview_reviewer | UI Quality & PWA Verification | completed | 38b19208-b15f-4295-a522-9e4df842efe9 |
+| Challenger 1 (M3) | teamwork_preview_challenger | Empirical UI & Voting Stress Verification | completed | d3b5c952-b057-44f9-a0e8-1dfe42575b6f |
+| Challenger 2 (M3) | teamwork_preview_challenger | Accessibility & Edge Case Verification | completed | 148a03cb-1644-4f52-9ca1-427041c4bf7f |
+| Auditor 1 (M3) | teamwork_preview_auditor | Forensic Integrity Audit | completed | c334f5ab-d8f4-46d8-bbca-2d3b04df4ab6 |
+| QA Suite (M4) | m4_qa | Production QA / R3 verification | completed | local-m4-2026-08-12 |
 
 ## Succession Status
-- Succession required: yes (spawn count 18 >= 16 upon completion of active subagents)
+- Succession required: no (M1–M4 complete; victory criteria met)
 - Spawn count: 18 / 16
-- Pending subagents: 683e6d23-c65d-4578-88db-41ba18e6d48f, 38b19208-b15f-4295-a522-9e4df842efe9, d3b5c952-b057-44f9-a0e8-1dfe42575b6f, 148a03cb-1644-4f52-9ca1-427041c4bf7f, c334f5ab-d8f4-46d8-bbca-2d3b04df4ab6
+- Pending subagents: none
 - Predecessor: none
-- Successor: not yet spawned
+- Successor: not required
+- Note: M3+M4 completed by follow-up agent (2026-08-12). `npm test` green.
 
 ## Active Timers
 - Heartbeat cron: task-5
