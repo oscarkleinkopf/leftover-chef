@@ -52,6 +52,17 @@ Para mantener tus cambios respaldados en GitHub de forma automática mientras ed
 npm run watch-sync
 ```
 
+Opcional: `npm run start:all` levanta servidor + auto-sync solo si `.env` contiene `GITHUB_TOKEN`.
+
+### 3. QA automatizado
+```bash
+npm test          # M3 roadmap suites + M4 production QA
+npm run test:m4   # Solo verificación R3 / PWA / HTTP smoke
+```
+
+### 4. GitHub Pages
+El proyecto usa rutas relativas y incluye `.nojekyll` para publicación estática en GitHub Pages.
+
 ---
 
 ## ⚙️ Configuración del Token de GitHub

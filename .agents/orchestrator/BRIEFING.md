@@ -68,14 +68,15 @@ Orchestrate the strategic roadmap integration for Leftover Chef: creating ROADMA
 | Challenger 1 (M3) | teamwork_preview_challenger | Empirical UI & Voting Stress Verification | completed | d3b5c952-b057-44f9-a0e8-1dfe42575b6f |
 | Challenger 2 (M3) | teamwork_preview_challenger | Accessibility & Edge Case Verification | completed | 148a03cb-1644-4f52-9ca1-427041c4bf7f |
 | Auditor 1 (M3) | teamwork_preview_auditor | Forensic Integrity Audit | completed | c334f5ab-d8f4-46d8-bbca-2d3b04df4ab6 |
+| QA Suite (M4) | m4_qa | Production QA / R3 verification | completed | local-m4-2026-08-12 |
 
 ## Succession Status
-- Succession required: no (M3 closed; M4 not yet dispatched)
+- Succession required: no (M1–M4 complete; victory criteria met)
 - Spawn count: 18 / 16
 - Pending subagents: none
 - Predecessor: none
-- Successor: not yet spawned
-- Note: M3 completed offline by follow-up agent (2026-08-12) with a11y/hardening + full review pipeline artifacts.
+- Successor: not required
+- Note: M3+M4 completed by follow-up agent (2026-08-12). `npm test` green.
 
 ## Active Timers
 - Heartbeat cron: task-5

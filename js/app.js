@@ -212,33 +212,75 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 3. STORAGE & CONFIG PERSISTENCE
   // ==========================================
+  function safeParseJSON(raw, fallback) {
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  function playTimerDoneSound() {
+    const tryElement = () => {
+      if (!el.audioTimerDone) return Promise.reject(new Error('no-audio-element'));
+      el.audioTimerDone.currentTime = 0;
+      return el.audioTimerDone.play();
+    };
+
+    const playWebAudioBeep = () => {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 880;
+      gain.gain.value = 0.08;
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+        ctx.close().catch(() => {});
+      }, 450);
+    };
+
+    tryElement().catch(() => {
+      try {
+        playWebAudioBeep();
+      } catch (e) {
+        console.log('Audio playback unavailable offline/blocked');
+      }
+    });
+  }
+
   function loadPersistedData() {
     // Load Profiles & Accounts
     loadProfiles();
 
-    // Load Settings
+    // Load Settings (tolerate corrupt payloads)
     const savedSettings = localStorage.getItem('leftover_chef_settings');
     if (savedSettings) {
-      state.settings = { ...state.settings, ...JSON.parse(savedSettings) };
+      const parsedSettings = safeParseJSON(savedSettings, null);
+      if (parsedSettings && typeof parsedSettings === 'object' && !Array.isArray(parsedSettings)) {
+        state.settings = { ...state.settings, ...parsedSettings };
+      }
     }
     
-    // Load Bookmarks
+    // Load Bookmarks (tolerate corrupt / non-array payloads)
     const savedBookmarks = localStorage.getItem('leftover_chef_bookmarks');
     if (savedBookmarks) {
-      state.bookmarks = JSON.parse(savedBookmarks);
+      const parsedBookmarks = safeParseJSON(savedBookmarks, null);
+      state.bookmarks = Array.isArray(parsedBookmarks) ? parsedBookmarks : [];
     }
 
     // Load Roadmap Votes (tolerate corrupt / non-object payloads)
     const savedVotes = localStorage.getItem('leftoverchef_roadmap_votes');
     if (savedVotes) {
-      try {
-        const parsedVotes = JSON.parse(savedVotes);
-        state.roadmapVotes = (parsedVotes && typeof parsedVotes === 'object' && !Array.isArray(parsedVotes))
-          ? parsedVotes
-          : {};
-      } catch (e) {
-        state.roadmapVotes = {};
-      }
+      const parsedVotes = safeParseJSON(savedVotes, null);
+      state.roadmapVotes = (parsedVotes && typeof parsedVotes === 'object' && !Array.isArray(parsedVotes))
+        ? parsedVotes
+        : {};
     }
 
     // Sync UI with Loaded Settings
@@ -1352,10 +1394,8 @@ document.addEventListener('DOMContentLoaded', () => {
           state.timer.isRunning = false;
           el.paramTimerStatus.innerText = 'TERMINADO';
           
-          // Sound the alarm and flash red!
-          if (el.audioTimerDone) {
-            el.audioTimerDone.play().catch(e => console.log('Audio playback blocked: ', e));
-          }
+          // Sound the alarm (remote asset with offline WebAudio fallback)
+          playTimerDoneSound();
           
           // Double flash dial
           el.paramTimerCard.style.borderColor = 'var(--neon-secondary)';

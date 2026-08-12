@@ -1,10 +1,10 @@
 # Progress Log — Leftover Chef Roadmap Integration
 
 ## Current Status
-Last visited: 2026-08-12T18:50:00Z
+Last visited: 2026-08-12T19:05:00Z
 
 ## Iteration Status
-Current iteration: 4 / 32
+Current iteration: 5 / 32
 
 ## Checklist
 - [x] Initialized project metadata (`BRIEFING.md`, `PROJECT.md`, `plan.md`, `context.md`, `progress.md`)
@@ -23,8 +23,8 @@ Current iteration: 4 / 32
   - [x] Reviewers & Challengers test UI & localStorage voting
   - [x] Forensic Auditor validates implementation
   - [x] Accessibility hardening (dialog semantics, Escape/focus, aria-pressed)
-- [ ] Milestone 4: QA, Offline PWA & Git Verification
-  - [ ] Verify PWA offline compatibility (sw.js)
-  - [ ] Verify zero console errors
-  - [ ] Verify Git main cleanliness
-  - [ ] Victory Audit readiness
+- [x] Milestone 4: QA, Offline PWA & Git Verification
+  - [x] Verify PWA offline compatibility (`service-worker.js` v4)
+  - [x] Verify zero console errors on boot (incl. corrupt storage)
+  - [x] Verify GitHub Pages readiness (relative paths + `.nojekyll`)
+  - [x] Victory Audit readiness (`npm test` green)

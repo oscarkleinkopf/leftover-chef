@@ -3,7 +3,7 @@
  * Offline-first file caching and request interceptor.
  */
 
-const CACHE_NAME = 'leftover-chef-v3';
+const CACHE_NAME = 'leftover-chef-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -12,7 +12,8 @@ const ASSETS_TO_CACHE = [
   './js/scanner.js',
   './js/app.js',
   './icon.svg',
-  './manifest.json'
+  './manifest.json',
+  './service-worker.js'
 ];
 
 // Install Event - cache core resources
@@ -66,10 +67,13 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => {
-        // If both cache and network fail, check if it is HTML
-        if (event.request.headers.get('accept').includes('text/html')) {
+        // If both cache and network fail, fall back to the app shell for navigations/HTML
+        const accept = event.request.headers.get('accept') || '';
+        const isNavigation = event.request.mode === 'navigate';
+        if (isNavigation || accept.includes('text/html')) {
           return caches.match('./index.html');
         }
+        return undefined;
       });
     })
   );

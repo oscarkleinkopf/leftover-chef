@@ -4,8 +4,12 @@
   "description": "Thermomix AI Refrigerator Recipe Generator",
   "main": "server.js",
   "scripts": {
-    "start": "node start.js",
-    "watch-sync": "node sync-watcher.js"
+    "start": "node server.js",
+    "start:all": "node start.js",
+    "watch-sync": "node sync-watcher.js",
+    "test:m3": "node .agents/teamwork_preview_worker_m3_1/test_roadmap_verification.js && node .agents/teamwork_preview_auditor_m3_1/forensic_audit_test.js && node .agents/teamwork_preview_challenger_m3_1/roadmap_stress_test.js && node .agents/teamwork_preview_challenger_m3_2/roadmap_a11y_edge_test.js",
+    "test:m4": "node .agents/m4_qa/production_qa_test.js",
+    "test": "npm run test:m3 && npm run test:m4"
   },
   "keywords": [
     "thermomix",

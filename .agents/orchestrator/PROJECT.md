@@ -10,7 +10,7 @@ This project expands Leftover Chef with a strategic evolution roadmap both in do
 | 1 | M1: Codebase Exploration & Requirements Analysis | Analyze current app structure, modal patterns, CSS variables, JS architecture, service worker setup. | none | DONE |
 | 2 | M2: Strategic Architecture Specification (`ROADMAP.md`) | Write detailed `ROADMAP.md` covering Phase 2.0 (Cloud Firebase), Phase 3.0 (Computer Vision), Phase 4.0 (Recipe Social Network), Phase 5.0 (Thermomix Cookidoo), including Mermaid diagrams. | M1 | DONE |
 | 3 | M3: Interactive Roadmap UI/UX Module | Implement roadmap modal/section, nav entry point, version cards (2.0 to 5.0), voting & interest tracking saved in localStorage. | M1, M2 | DONE |
-| 4 | M4: QA, Offline PWA Verification & Git Integration | Verify zero console errors, offline PWA compatibility, test UI/UX, verify clean git status on main branch. | M2, M3 | PLANNED |
+| 4 | M4: QA, Offline PWA Verification & Git Integration | Verify zero console errors, offline PWA compatibility, test UI/UX, verify clean git status on main branch. | M2, M3 | DONE |
 
 ## Interface Contracts & UI Specs
 - **Nav Button**: Menu item / header icon to open Roadmap Modal.

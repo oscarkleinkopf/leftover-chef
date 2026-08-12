@@ -60,8 +60,8 @@ console.log("   ✅ css/styles.css checks passed.");
 
 // 3. Verify service-worker.js cache bump
 console.log("3. Checking service-worker.js CACHE_NAME...");
-if (!swContent.includes("const CACHE_NAME = 'leftover-chef-v3';")) {
-  throw new Error("service-worker.js CACHE_NAME is not set to 'leftover-chef-v3'!");
+if (!swContent.includes("const CACHE_NAME = 'leftover-chef-v4';")) {
+  throw new Error("service-worker.js CACHE_NAME is not set to 'leftover-chef-v4'!");
 }
 console.log("   ✅ service-worker.js checks passed.");
 

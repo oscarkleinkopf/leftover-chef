@@ -22,9 +22,9 @@ Asegurar que todas las adiciones cumplan con cero errores en consola, mantengan 
 ## Acceptance Criteria
 
 ### Calidad y Funcionalidad
-- [ ] El archivo `ROADMAP.md` existe en la raíz del proyecto y contiene 4 fases detalladas con diagrama Mermaid de arquitectura.
-- [ ] El modal o vista de Roadmap en la UI se abre desde el menú o cabecera de la app y renderiza las tarjetas de la versión 2.0 a 5.0.
-- [ ] La interacción de votación/interés en características persiste en `localStorage`.
-- [ ] La aplicación se ejecuta en `http://localhost:3000` o estáticamente sin errores JS en la consola del navegador.
-- [ ] Los cambios se integran en Git sin conflictos en la rama `main`.
+- [x] El archivo `ROADMAP.md` existe en la raíz del proyecto y contiene 4 fases detalladas con diagrama Mermaid de arquitectura.
+- [x] El modal o vista de Roadmap en la UI se abre desde el menú o cabecera de la app y renderiza las tarjetas de la versión 2.0 a 5.0.
+- [x] La interacción de votación/interés en características persiste en `localStorage`.
+- [x] La aplicación se ejecuta en `http://localhost:3000` o estáticamente sin errores JS en la consola del navegador.
+- [x] Los cambios se integran en Git sin conflictos en la rama `main`.
 </USER_REQUEST>
