@@ -228,11 +228,14 @@ document.addEventListener('DOMContentLoaded', () => {
       state.bookmarks = JSON.parse(savedBookmarks);
     }
 
-    // Load Roadmap Votes
+    // Load Roadmap Votes (tolerate corrupt / non-object payloads)
     const savedVotes = localStorage.getItem('leftoverchef_roadmap_votes');
     if (savedVotes) {
       try {
-        state.roadmapVotes = JSON.parse(savedVotes);
+        const parsedVotes = JSON.parse(savedVotes);
+        state.roadmapVotes = (parsedVotes && typeof parsedVotes === 'object' && !Array.isArray(parsedVotes))
+          ? parsedVotes
+          : {};
       } catch (e) {
         state.roadmapVotes = {};
       }
@@ -1468,6 +1471,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Roadmap Modal Handlers & Renderer
+  function closeRoadmapModal() {
+    if (!el.modalRoadmap) return;
+    el.modalRoadmap.classList.add('hidden');
+    if (el.btnRoadmap) el.btnRoadmap.focus();
+  }
+
+  function openRoadmapModal() {
+    if (!el.modalRoadmap) return;
+    renderRoadmap();
+    el.modalRoadmap.classList.remove('hidden');
+    const focusTarget = el.btnCloseRoadmap || el.roadmapCardsContainer?.querySelector('.btn-vote');
+    if (focusTarget) focusTarget.focus();
+  }
+
   function renderRoadmap() {
     if (!el.roadmapCardsContainer) return;
     el.roadmapCardsContainer.innerHTML = '';
@@ -1478,6 +1495,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const card = document.createElement('div');
       card.className = 'roadmap-phase-card';
+      card.setAttribute('role', 'listitem');
 
       const featuresHtml = phase.features
         .map(feat => `<li class="roadmap-feature-item"><span>${feat}</span></li>`)
@@ -1495,7 +1513,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ${featuresHtml}
           </ul>
         </div>
-        <button class="btn-vote ${isVoted ? 'voted' : ''}" data-version-id="${phase.id}">
+        <button
+          type="button"
+          class="btn-vote ${isVoted ? 'voted' : ''}"
+          data-version-id="${phase.id}"
+          aria-pressed="${isVoted ? 'true' : 'false'}"
+          aria-label="${isVoted ? 'Quitar voto' : 'Votar'} por ${phase.version} (${totalVotes} votos)"
+        >
           <span>${isVoted ? '🚀 Votado' : '👍 Votar'}</span>
           <span>(${totalVotes})</span>
         </button>
@@ -1514,23 +1538,18 @@ document.addEventListener('DOMContentLoaded', () => {
     state.roadmapVotes[versionId] = !state.roadmapVotes[versionId];
     localStorage.setItem('leftoverchef_roadmap_votes', JSON.stringify(state.roadmapVotes));
     renderRoadmap();
+    const refreshedBtn = el.roadmapCardsContainer?.querySelector(`.btn-vote[data-version-id="${versionId}"]`);
+    if (refreshedBtn) refreshedBtn.focus();
   }
 
   if (el.btnRoadmap) {
-    el.btnRoadmap.addEventListener('click', () => {
-      renderRoadmap();
-      el.modalRoadmap.classList.remove('hidden');
-    });
+    el.btnRoadmap.addEventListener('click', openRoadmapModal);
   }
   if (el.btnCloseRoadmap) {
-    el.btnCloseRoadmap.addEventListener('click', () => {
-      el.modalRoadmap.classList.add('hidden');
-    });
+    el.btnCloseRoadmap.addEventListener('click', closeRoadmapModal);
   }
   if (el.btnCloseRoadmapFooter) {
-    el.btnCloseRoadmapFooter.addEventListener('click', () => {
-      el.modalRoadmap.classList.add('hidden');
-    });
+    el.btnCloseRoadmapFooter.addEventListener('click', closeRoadmapModal);
   }
 
   // Recipe Detail Modal Close
@@ -1607,8 +1626,23 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
         overlay.classList.add('hidden');
+        if (overlay.id === 'modal-roadmap' && el.btnRoadmap) {
+          el.btnRoadmap.focus();
+        }
       }
     });
+  });
+
+  // Escape closes the topmost open modal (roadmap + existing overlays)
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const openModals = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden)'));
+    if (openModals.length === 0) return;
+    const topModal = openModals[openModals.length - 1];
+    topModal.classList.add('hidden');
+    if (topModal.id === 'modal-roadmap' && el.btnRoadmap) {
+      el.btnRoadmap.focus();
+    }
   });
 
   // Kid Chef Toggle Listener

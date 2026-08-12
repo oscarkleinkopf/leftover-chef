@@ -81,10 +81,10 @@ try {
   const swPath = path.join(rootDir, 'service-worker.js');
   const swContent = fs.readFileSync(swPath, 'utf8');
 
-  if (swContent.includes("CACHE_NAME = 'leftover-chef-v2'") || swContent.includes('CACHE_NAME = "leftover-chef-v2"')) {
-    logPass('service-worker.js correctly bumped CACHE_NAME to leftover-chef-v2.');
+  if (swContent.includes("CACHE_NAME = 'leftover-chef-v3'") || swContent.includes('CACHE_NAME = "leftover-chef-v3"')) {
+    logPass('service-worker.js correctly bumped CACHE_NAME to leftover-chef-v3.');
   } else {
-    logFail('service-worker.js CACHE_NAME is not bumped to leftover-chef-v2.');
+    logFail('service-worker.js CACHE_NAME is not bumped to leftover-chef-v3.');
   }
 } catch (e) {
   logFail(`Error reading service-worker.js: ${e.message}`);
@@ -179,14 +179,14 @@ try {
     logPass('All version titles, baseline vote counts, and feature lists match specs.');
   }
 
-  // Test Vote Toggling (v2.0)
-  const card1VoteBtn = cards[0].querySelector('.btn-vote');
-  card1VoteBtn.click(); // Vote for v2.0
+  // Test Vote Toggling (v2.0) — re-query DOM after each renderRoadmap()
+  cards[0].querySelector('.btn-vote').click(); // Vote for v2.0
+  const votedBtn = container.querySelector('.btn-vote[data-version-id="v2.0"]');
 
-  if (card1VoteBtn.classList.contains('voted') && card1VoteBtn.textContent.includes('143') && card1VoteBtn.textContent.includes('Votado')) {
+  if (votedBtn && votedBtn.classList.contains('voted') && votedBtn.textContent.includes('143') && votedBtn.textContent.includes('Votado')) {
     logPass('Voting on v2.0 updates button state to voted and increments vote count to 143.');
   } else {
-    logFail(`Voting on v2.0 failed. Button text: "${card1VoteBtn.textContent}", classes: "${card1VoteBtn.className}"`);
+    logFail(`Voting on v2.0 failed. Button text: "${votedBtn ? votedBtn.textContent : 'missing'}", classes: "${votedBtn ? votedBtn.className : 'n/a'}"`);
   }
 
   // Check LocalStorage Persistence
@@ -199,27 +199,33 @@ try {
   }
 
   // Un-vote Test
-  card1VoteBtn.click(); // Unvote v2.0
+  container.querySelector('.btn-vote[data-version-id="v2.0"]').click();
   const updatedVotes = JSON.parse(localStorage.getItem('leftoverchef_roadmap_votes'));
-  const updatedBtn = container.querySelectorAll('.roadmap-phase-card')[0].querySelector('.btn-vote');
+  const updatedBtn = container.querySelector('.btn-vote[data-version-id="v2.0"]');
 
-  if (!updatedBtn.classList.contains('voted') && updatedBtn.textContent.includes('142') && updatedVotes['v2.0'] === false) {
+  if (updatedBtn && !updatedBtn.classList.contains('voted') && updatedBtn.textContent.includes('142') && updatedVotes['v2.0'] === false) {
     logPass('Un-voting v2.0 correctly decrements count back to 142 and updates localStorage (v2.0 = false).');
   } else {
-    logFail(`Un-voting v2.0 failed. Button text: "${updatedBtn.textContent}", localStorage: ${JSON.stringify(updatedVotes)}`);
+    logFail(`Un-voting v2.0 failed. Button text: "${updatedBtn ? updatedBtn.textContent : 'missing'}", localStorage: ${JSON.stringify(updatedVotes)}`);
   }
 
   // Multi-vote Test (v3.0 and v5.0)
-  const card2VoteBtn = container.querySelectorAll('.roadmap-phase-card')[1].querySelector('.btn-vote');
-  const card4VoteBtn = container.querySelectorAll('.roadmap-phase-card')[3].querySelector('.btn-vote');
-  card2VoteBtn.click(); // Vote v3.0
-  card4VoteBtn.click(); // Vote v5.0
+  container.querySelector('.btn-vote[data-version-id="v3.0"]').click();
+  container.querySelector('.btn-vote[data-version-id="v5.0"]').click();
 
   const multiVotes = JSON.parse(localStorage.getItem('leftoverchef_roadmap_votes'));
   if (multiVotes['v3.0'] === true && multiVotes['v5.0'] === true) {
     logPass('Multi-vote tracking (v3.0 and v5.0) persisted accurately in localStorage.');
   } else {
     logFail(`Multi-vote tracking failed: ${JSON.stringify(multiVotes)}`);
+  }
+
+  // Accessibility contract for roadmap modal
+  const dialog = modalRoadmap.querySelector('[role="dialog"]');
+  if (dialog && dialog.getAttribute('aria-modal') === 'true' && dialog.getAttribute('aria-labelledby') === 'roadmap-modal-title') {
+    logPass('Roadmap dialog exposes role="dialog", aria-modal, and aria-labelledby.');
+  } else {
+    logFail('Roadmap dialog missing accessibility attributes.');
   }
 
   // Test Modal Close Buttons
