@@ -175,7 +175,7 @@
             <p class="recipe-disclaimer">Compatibles con modelos TM5 y TM6</p>
           </div>
           <button id="btn-meal-plan" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px;">
-            📅 Plan Semanal (3 Días)
+            📅 Plan Semanal + Lista de compra
           </button>
         </div>
 
@@ -264,20 +264,33 @@
     </div>
   </div>
 
-  <!-- 3-DAY ZERO WASTE MEAL PLAN MODAL -->
+  <!-- 7-DAY ZERO WASTE MEAL PLAN MODAL -->
   <div class="modal-overlay hidden" id="modal-meal-plan">
     <div class="modal glass modal-large animate-modal">
       <div class="modal-header">
         <div>
-          <h2>📅 Plan Semanal Cero Desperdicio (3 Días)</h2>
-          <p class="subtitle" style="font-size: 0.85rem; color: var(--text-secondary);">Aprovechamiento estratégico de tus ingredientes en 6 comidas principales</p>
+          <h2>📅 Plan Semanal Cero Desperdicio (7 Días)</h2>
+          <p class="subtitle" style="font-size: 0.85rem; color: var(--text-secondary);">14 comidas priorizando lo que caduca, con lista de compra descontando tu despensa</p>
         </div>
-        <button class="close-modal-btn" id="btn-close-meal-plan">&times;</button>
+        <button class="close-modal-btn" id="btn-close-meal-plan" aria-label="Cerrar plan semanal">&times;</button>
       </div>
       <div class="modal-body">
         <div class="meal-plan-timeline" id="meal-plan-timeline">
           <!-- Populated via JS -->
         </div>
+        <section class="shopping-list-panel" id="shopping-list-panel" aria-label="Lista de compra semanal">
+          <div class="shopping-list-header">
+            <h3>🛒 Lista de compra de la semana</h3>
+            <p class="shopping-list-summary" id="shopping-list-summary"></p>
+          </div>
+          <ul class="shopping-list" id="shopping-list"></ul>
+          <p class="shopping-list-covered" id="shopping-list-covered"></p>
+          <div class="shopping-list-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-shopping-whatsapp">🟢 WhatsApp</button>
+            <button type="button" class="btn btn-tertiary btn-sm" id="btn-shopping-copy">📋 Copiar</button>
+            <button type="button" class="btn btn-tertiary btn-sm" id="btn-shopping-print">🖨️ Imprimir lista</button>
+          </div>
+        </section>
       </div>
       <div class="modal-footer">
         <button class="btn btn-tertiary" id="btn-print-meal-plan">🖨️ Imprimir Plan en PDF</button>

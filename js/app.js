@@ -1734,28 +1734,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const text = `Ingredientes faltantes para "${state.selectedRecipe.title}":\n` + 
                  missingList.map(m => `- ${m}`).join('\n');
                  
-    navigator.clipboard.writeText(text).then(() => {
+    copyTextToClipboard(text).then(() => {
       alert('📋 Lista de ingredientes copiada al portapapeles.');
-    }).catch(err => {
-      console.error('Error copying to clipboard:', err);
+    }).catch(() => {
+      alert(text);
     });
   });
 
-  function getMissingIngredientsList() {
-    const availableIdsArray = Array.from(state.activeIngredients);
-    const basePortions = state.selectedRecipe.portions || 4;
-    const scaleFactor = state.portions / basePortions;
-    const missing = [];
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return Promise.reject(new Error('clipboard-unavailable'));
+  }
 
-    state.selectedRecipe.requiredIngredients.forEach(req => {
-      if (!availableIdsArray.includes(req.id)) {
-        const dbItem = window.INGREDIENT_DATABASE.find(item => item.id === req.id);
-        const name = dbItem ? dbItem.name : req.id;
-        const scaledAmount = Math.round(req.amount * scaleFactor);
-        missing.push(`${scaledAmount}g de ${name}`);
-      }
-    });
-    return missing;
+  function getMissingIngredientsList() {
+    if (!state.selectedRecipe) return [];
+    const shopping = window.buildShoppingList(
+      [{ recipe: state.selectedRecipe }],
+      state.pantry,
+      state.portions
+    );
+    return shopping.toBuy.map((item) => `${item.buyGrams}g de ${item.name}`);
   }
 
   // Close modals when clicking overlay backdrop
@@ -1796,12 +1796,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3-Day Meal Plan Handlers
+  // 7-Day Meal Plan + Shopping List
   const btnMealPlan = document.getElementById('btn-meal-plan');
   const modalMealPlan = document.getElementById('modal-meal-plan');
   const btnCloseMealPlan = document.getElementById('btn-close-meal-plan');
   const btnCloseMealPlanFooter = document.getElementById('btn-close-meal-plan-footer');
   const mealPlanTimeline = document.getElementById('meal-plan-timeline');
+  const shoppingListEl = document.getElementById('shopping-list');
+  const shoppingSummaryEl = document.getElementById('shopping-list-summary');
+  const shoppingCoveredEl = document.getElementById('shopping-list-covered');
+  let activeMealPlan = [];
+  let activeShoppingList = { toBuy: [], covered: [], buyCount: 0, buyGramsTotal: 0 };
 
   if (btnMealPlan) {
     btnMealPlan.addEventListener('click', () => {
@@ -1810,14 +1815,78 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Selecciona o escanea ingredientes antes de generar tu plan semanal Cero Desperdicio.');
         return;
       }
-      const plan = window.generateWeeklyMealPlan(activeIds, state.pantry);
-      renderMealPlan(plan);
+      activeMealPlan = window.generateWeeklyMealPlan(activeIds, state.pantry, { dayCount: 7 });
+      activeShoppingList = window.buildShoppingList(activeMealPlan, state.pantry, state.portions);
+      renderMealPlan(activeMealPlan);
+      renderShoppingList(activeShoppingList);
       modalMealPlan.classList.remove('hidden');
     });
   }
 
   if (btnCloseMealPlan) btnCloseMealPlan.addEventListener('click', () => modalMealPlan.classList.add('hidden'));
   if (btnCloseMealPlanFooter) btnCloseMealPlanFooter.addEventListener('click', () => modalMealPlan.classList.add('hidden'));
+
+  function renderShoppingList(shopping) {
+    if (!shoppingListEl) return;
+    shoppingListEl.innerHTML = '';
+    const toBuy = shopping.toBuy || [];
+    const covered = shopping.covered || [];
+
+    if (shoppingSummaryEl) {
+      shoppingSummaryEl.textContent = toBuy.length === 0
+        ? 'No te falta nada: la despensa cubre el plan.'
+        : `${toBuy.length} producto${toBuy.length === 1 ? '' : 's'} · ${shopping.buyGramsTotal}g a comprar (raciones: ${state.portions})`;
+    }
+
+    if (toBuy.length === 0) {
+      const empty = document.createElement('li');
+      empty.className = 'shopping-list-empty';
+      empty.textContent = '✅ Lista vacía. Tienes cubierto el plan con lo que hay en la nevera.';
+      shoppingListEl.appendChild(empty);
+    } else {
+      toBuy.forEach((item) => {
+        const li = document.createElement('li');
+        const haveLabel = item.haveUnquantified
+          ? 'en nevera'
+          : `${item.haveGrams || 0}g en nevera`;
+        li.innerHTML = `<span>${item.name} <small style="color:var(--text-muted);">(${haveLabel})</small></span><span class="buy-qty">+${item.buyGrams}g</span>`;
+        shoppingListEl.appendChild(li);
+      });
+    }
+
+    if (shoppingCoveredEl) {
+      if (covered.length === 0) {
+        shoppingCoveredEl.textContent = '';
+      } else {
+        shoppingCoveredEl.textContent = `Ya tienes: ${covered.map((c) => c.name).join(', ')}.`;
+      }
+    }
+  }
+
+  function currentShoppingListText() {
+    return window.formatShoppingListText(
+      activeShoppingList,
+      `Lista de compra — plan semanal Leftover Chef (${state.portions} raciones)`
+    );
+  }
+
+  document.getElementById('btn-shopping-whatsapp')?.addEventListener('click', () => {
+    if (!activeShoppingList.toBuy || activeShoppingList.toBuy.length === 0) {
+      alert('¡Tienes todos los ingredientes del plan en la despensa!');
+      return;
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(currentShoppingListText())}`, '_blank');
+  });
+
+  document.getElementById('btn-shopping-copy')?.addEventListener('click', () => {
+    copyTextToClipboard(currentShoppingListText()).then(() => {
+      alert('📋 Lista de compra copiada al portapapeles.');
+    }).catch(() => {
+      alert(currentShoppingListText());
+    });
+  });
+
+  document.getElementById('btn-shopping-print')?.addEventListener('click', () => window.print());
 
   function renderMealPlan(plan) {
     if (!mealPlanTimeline) return;
@@ -1832,10 +1901,11 @@ document.addEventListener('DOMContentLoaded', () => {
     Object.keys(grouped).forEach(day => {
       const groupDiv = document.createElement('div');
       groupDiv.className = 'meal-day-group';
+      const rescued = grouped[day].reduce((sum, meal) => sum + (meal.savedGrams || 0), 0);
 
       const header = document.createElement('div');
       header.className = 'meal-day-header';
-      header.innerHTML = `<span>${day}</span> <span style="font-size:12px; color:var(--text-muted);">🌱 Rescate: ~${grouped[day][0].savedGrams * 2}g de alimentos</span>`;
+      header.innerHTML = `<span>${day}</span> <span style="font-size:12px; color:var(--text-muted);">🌱 Rescate: ~${rescued}g de la despensa</span>`;
       groupDiv.appendChild(header);
 
       const cardsRow = document.createElement('div');
@@ -1848,7 +1918,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.innerHTML = `
           <div class="meal-card-type">${meal.mealType}</div>
           <div class="meal-card-title">${meal.recipe.title}</div>
-          <div class="meal-card-meta">⏱️ ${meal.recipe.prepTime || '20 min'} | 👥 ${meal.recipe.portions || '3 raciones'}</div>
+          <div class="meal-card-meta">⏱️ ${meal.recipe.prepTime || '20 min'} | 👥 ${state.portions} raciones</div>
         `;
         card.addEventListener('click', () => {
           modalMealPlan.classList.add('hidden');
