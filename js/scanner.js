@@ -14,6 +14,7 @@ class FridgeScanner {
     this.statusText = document.getElementById('scanning-status');
     this.isScanning = false;
     this.animationId = null;
+    this.cameraStream = null;
   }
 
   // Load photos into the queue
@@ -220,161 +221,142 @@ class FridgeScanner {
     if (this.container) this.container.classList.add('hidden');
   }
 
+  addDataUrlImage(dataUrl, mimeType = 'image/jpeg') {
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) return null;
+    const image = {
+      file: { type: mimeType },
+      dataUrl,
+      id: 'img_' + Math.random().toString(36).substr(2, 9)
+    };
+    this.images.push(image);
+    window.dispatchEvent(new CustomEvent('images-updated'));
+    return image.id;
+  }
+
+  async startLiveCamera(videoEl, constraints = { video: { facingMode: { ideal: 'environment' } }, audio: false }) {
+    this.stopLiveCamera();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('Este navegador no permite cámara en vivo. Usa HTTPS o localhost.');
+    }
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    this.cameraStream = stream;
+    if (videoEl) {
+      videoEl.srcObject = stream;
+      await videoEl.play().catch(() => {});
+    }
+    return stream;
+  }
+
+  stopLiveCamera(videoEl) {
+    if (this.cameraStream) {
+      this.cameraStream.getTracks().forEach((track) => track.stop());
+      this.cameraStream = null;
+    }
+    if (videoEl) {
+      videoEl.srcObject = null;
+    }
+  }
+
+  captureLiveFrame(videoEl, quality = 0.82) {
+    if (!videoEl || !videoEl.videoWidth) {
+      throw new Error('La cámara aún no tiene imagen. Espera un segundo e inténtalo de nuevo.');
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = videoEl.videoWidth;
+    canvas.height = videoEl.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoEl, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+    return this.addDataUrlImage(dataUrl, 'image/jpeg');
+  }
+
   /**
-   * Gemini Multimodal API call
-   * Converts all images in queue to base64, constructs request payload,
-   * sends it client-side to Google AI Studio endpoint, and yields a Thermomix recipe.
+   * Gemini scan: uses the local /api/gemini-scan proxy when available so the
+   * API key stays on the server. Falls back to a browser key for GitHub Pages.
    */
-  async runGeminiAIScan(apiKey, dietaryFilters, targetModel, onProgress, onSuccess, onError) {
+  async runGeminiAIScan(apiKey, dietaryFilters, targetModel, onProgress, onSuccess, onError, options = {}) {
     if (this.images.length === 0) {
       onError('Por favor, selecciona o toma al menos una foto de tu nevera.');
       return;
     }
 
+    const helper = (typeof window !== 'undefined' && window.LeftoverGemini) || null;
+    const useProxy = !!options.useProxy;
+
     try {
       onProgress('Procesando imágenes y convirtiendo formato...');
-      
-      // 1. Prepare base64 images
-      const imageParts = this.images.map(img => {
-        const base64Data = img.dataUrl.split(',')[1];
-        const mimeType = img.file.type;
-        return {
-          inlineData: {
-            data: base64Data,
-            mimeType: mimeType
-          }
-        };
-      });
 
-      onProgress('Conectando con Google Gemini...');
+      const images = this.images.map((img) => ({
+        mimeType: (img.file && img.file.type) || 'image/jpeg',
+        data: img.dataUrl
+      }));
 
-      // 2. Formulate optimized culinary instruction prompt
-      const systemPrompt = `Actúa como un chef experto con estrellas Michelin y especialista en cocina de Thermomix (modelos TM5 y TM6).
-Analiza detalladamente las fotos provistas del interior del refrigerador.
-Identifica todos los ingredientes visibles (vegetales, carnes, lácteos, salsas, etc.).
+      onProgress(useProxy ? 'Conectando con el proxy de Leftover Chef...' : 'Conectando con Google Gemini...');
 
-Tu tarea es crear una receta espectacular y detallada para preparar en Thermomix basándote principalmente en estos ingredientes encontrados.
-Puedes dar por hecho que el usuario cuenta en su despensa con condimentos básicos o indispensables: aceite de oliva, ajo, cebolla, sal, pimienta, harina y agua.
-
-La receta generada DEBE ser 100% compatible con los modelos TM5 y TM6.
-Elige un título sugerente y un subtítulo moderno.
-Indica las porciones (e.g. 3 raciones), la dificultad (Fácil, Media, Alta), el tiempo total de preparación (e.g., 30 minutos).
-Detalla si el plato cumple de forma natural con estas dietas: ${dietaryFilters.join(', ') || 'ninguna en particular'}.
-
-Asegúrate de calcular de forma realista el valor nutricional total por ración individual para esta receta:
-- Calorías (kcal)
-- Proteínas (g)
-- Carbohidratos (g)
-- Grasas (g)
-
-Escribe los pasos de preparación paso a paso. Para CADA paso obligatoriamente debes proveer la configuración detallada de la Thermomix, que consiste en:
-- time: Tiempo del paso (e.g. "5 seg", "12 min", "Sofreír", "Listo").
-- temp: Temperatura en grados o Varoma (e.g. "Sin temp", "100°C", "120°C", "Varoma").
-- speed: Velocidad de las cuchillas (e.g. "vel 1", "vel 5", "vel cuchara", "vel 1.5", "Listo").
-- reverse: Un booleano indicando si el giro inverso está activado (true) o desactivado (false). Es vital activarlo para no destrozar carnes, arroces o verduras al cocinar.
-- accessory: El accesorio a colocar en ese paso (e.g., "Cuchillas", "Mariposa", "Cestillo en vaso", "Cestillo sobre tapa", "Varoma completo", "Espátula").
-- speechText: Un texto breve y ameno que sirva para que el lector de voz de la app lea las instrucciones amigablemente al usuario en la cocina mientras cocina.
-- timer: Un entero opcional que indique los segundos que debe contar el temporizador integrado para ese paso en caso de aplicar (e.g., 5 minutos = 300).
-
-DEBES responder ÚNICAMENTE con un objeto JSON válido que siga exactamente la siguiente estructura sin rodeos, sin bloques markdown de código triples, solo el string JSON:
-{
-  "detectedIngredients": ["zanahoria", "cebolla", "pollo"], // Lista de IDs de ingredientes detectados (usa en lo posible IDs de la base de datos de Leftover Chef: calabacin, tomate, champiñon, brocoli, patata, pollo, ternera, salmon, gambas, tofu, huevo, leche, queso_rallado)
-  "title": "Título de la Receta",
-  "subtitle": "Subtítulo ameno",
-  "prepTime": 30,
-  "portions": 3,
-  "diet": ["vegetarian", "gluten-free"], // Tags aplicables en minúscula
-  "difficulty": "Fácil",
-  "requiredIngredients": [
-    { "id": "zanahoria", "amount": 150, "display": "150g de Zanahoria cortada en rodajas" }
-  ],
-  "optionalIngredients": [
-    { "id": "pimienta", "display": "Pimienta negra recién molida al gusto" }
-  ],
-  "nutrition": {
-    "kcal": 380,
-    "protein": 12,
-    "carbs": 55,
-    "fat": 14
-  },
-  "steps": [
-    {
-      "step": 1,
-      "text": "Poner la cebolla y el ajo en el vaso y picar.",
-      "tmSettings": {
-        "time": "5 seg",
-        "temp": "Sin temp",
-        "speed": "5",
-        "reverse": false,
-        "accessory": "Cuchilla"
-      },
-      "speechText": "Paso 1. Añade la cebolla y el ajo en el vaso. Cierra la tapa y pica cinco segundos a velocidad cinco.",
-      "timer": 5
-    }
-  ]
-}`;
-
-      // 3. Make fetch call to Gemini 2.5 Flash API endpoint
-      // Using gemini-2.5-flash as the default model due to its high speed, intelligence and robust JSON output formatting.
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [
-            {
+      let rawText;
+      if (useProxy) {
+        const response = await fetch('./api/gemini-scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images, dietaryFilters, targetModel })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.error || `Error del proxy HTTP ${response.status}`);
+        }
+        rawText = payload.rawText || (payload.recipe ? JSON.stringify(payload.recipe) : '');
+        if (payload.recipe) {
+          payload.recipe.id = payload.recipe.id || ('gemini_' + Date.now());
+          payload.recipe.image = payload.recipe.image || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&q=80&w=800';
+          onSuccess(payload.recipe);
+          return;
+        }
+      } else {
+        if (!apiKey) {
+          throw new Error('Falta la clave de Gemini y el proxy del servidor no está configurado.');
+        }
+        const body = helper
+          ? helper.buildGeminiRequestBody(images, dietaryFilters, targetModel)
+          : {
+            contents: [{
               parts: [
-                { text: systemPrompt },
-                ...imageParts
+                { text: 'Analiza las fotos del refrigerador y responde con JSON de receta Thermomix.' },
+                ...images.map((img) => ({
+                  inlineData: {
+                    data: String(img.data).split(',')[1] || img.data,
+                    mimeType: img.mimeType
+                  }
+                }))
               ]
-            }
-          ],
-          generationConfig: {
-            responseMimeType: "application/json"
-          }
-        })
-      });
-
-      if (!response.ok) {
-        const errJson = await response.json();
-        throw new Error(errJson.error?.message || `Error del servidor HTTP ${response.status}`);
+            }],
+            generationConfig: { responseMimeType: 'application/json' }
+          };
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${(helper && helper.MODEL) || 'gemini-2.5-flash'}:generateContent?key=${apiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!response.ok) {
+          const errJson = await response.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `Error del servidor HTTP ${response.status}`);
+        }
+        const result = await response.json();
+        rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       }
 
       onProgress('Descifrando recetas culinarias generadas...');
-
-      const result = await response.json();
-      const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      
       if (!rawText) {
         throw new Error('La inteligencia artificial de Gemini no devolvió ninguna receta válida.');
       }
-
-      // Parse JSON from Gemini
-      let recipeData;
-      try {
-        recipeData = JSON.parse(rawText.trim());
-      } catch (jsonErr) {
-        console.error("Fallo al parsear respuesta JSON de Gemini. Respuesta cruda:", rawText);
-        // Try extracting JSON if wrapped inside markdown code blocks
-        const match = rawText.match(/\{[\s\S]*\}/);
-        if (match) {
-          recipeData = JSON.parse(match[0]);
-        } else {
-          throw new Error('Error al interpretar los datos culinarios. Reintente el escaneo.');
-        }
-      }
-
-      // Add standard model fallback elements
+      const recipeData = helper
+        ? helper.parseGeminiRecipeResponse(rawText)
+        : JSON.parse(rawText.trim());
       recipeData.id = 'gemini_' + Date.now();
-      recipeData.image = 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&q=80&w=800'; // Sleek fallback kitchen cover
-      
+      recipeData.image = 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&q=80&w=800';
       onSuccess(recipeData);
-
     } catch (error) {
-      console.error("Error en conexión con la API de Gemini:", error);
+      console.error('Error en conexión con la API de Gemini:', error);
       onError(error.message || 'Error de red inesperado al conectar con Gemini.');
     }
   }

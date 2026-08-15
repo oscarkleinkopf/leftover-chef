@@ -3,13 +3,14 @@
  * Offline-first file caching and request interceptor.
  */
 
-const CACHE_NAME = 'leftover-chef-v5';
+const CACHE_NAME = 'leftover-chef-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/styles.css',
   './js/recipes.js',
   './js/scanner.js',
+  './js/gemini-scan.js',
   './js/app.js',
   './icon.svg',
   './manifest.json',
@@ -45,8 +46,8 @@ self.addEventListener('activate', (event) => {
 
 // Fetch Event - Serve cached content or fallback to network
 self.addEventListener('fetch', (event) => {
-  // Do not intercept external API calls to Google Gemini
-  if (event.request.url.includes('generativelanguage.googleapis.com')) {
+  // Do not intercept Gemini (direct or local proxy)
+  if (event.request.url.includes('generativelanguage.googleapis.com') || event.request.url.includes('/api/')) {
     return;
   }
 

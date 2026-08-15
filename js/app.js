@@ -83,7 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
       }
     ],
-    roadmapVotes: {}
+    roadmapVotes: {},
+    geminiProxyConfigured: false
   };
 
   // Instantiate Photo Scanner
@@ -119,6 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput: document.getElementById('file-input'),
     btnStartScan: document.getElementById('btn-start-scan'),
     btnCancelScan: document.getElementById('btn-cancel-scan'),
+    btnOpenCamera: document.getElementById('btn-open-camera'),
+    btnCaptureFrame: document.getElementById('btn-capture-frame'),
+    btnCloseCamera: document.getElementById('btn-close-camera'),
+    cameraOverlay: document.getElementById('camera-overlay'),
+    cameraVideo: document.getElementById('camera-video'),
     thumbnailsQueue: document.getElementById('thumbnails-queue'),
     scannerActions: document.getElementById('scanner-actions'),
     scannerModeBadge: document.getElementById('scanner-mode-badge'),
@@ -150,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     apiKeyInput: document.getElementById('api-key-input'),
     btnTogglePassword: document.getElementById('btn-toggle-password'),
     apiKeyStatus: document.getElementById('api-key-status'),
+    geminiKeyHelper: document.getElementById('gemini-key-helper'),
     
     // Bookmarks Modal
     modalBookmarks: document.getElementById('modal-bookmarks'),
@@ -288,15 +295,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sync UI with Loaded Settings
     el.toggleGeminiMode.checked = state.settings.geminiModeActive;
     el.apiKeyInput.value = state.settings.geminiApiKey;
-    if (state.settings.geminiModeActive) {
+    if (el.toggleGeminiMode.checked) {
       el.apiKeyContainer.classList.remove('collapsed');
-      el.scannerModeBadge.innerText = 'Gemini AI Conectado';
-      el.scannerModeBadge.className = 'badge badge-neon';
     } else {
       el.apiKeyContainer.classList.add('collapsed');
-      el.scannerModeBadge.innerText = 'Simulador Activo';
-      el.scannerModeBadge.className = 'badge badge-neon';
     }
+    updateGeminiBadge();
     
     // Set default radio model TM5/TM6
     const radioModel = document.querySelector(`input[name="tm-model"][value="${state.settings.defaultTmModel}"]`);
@@ -309,19 +313,67 @@ document.addEventListener('DOMContentLoaded', () => {
     state.settings.defaultTmModel = document.querySelector('input[name="tm-model"]:checked')?.value || 'TM6';
     
     localStorage.setItem('leftover_chef_settings', JSON.stringify(state.settings));
-    
-    // Visual Updates
-    if (state.settings.geminiModeActive) {
-      el.scannerModeBadge.innerText = 'Gemini AI Conectado';
-      el.scannerModeBadge.className = 'badge badge-neon';
-    } else {
-      el.scannerModeBadge.innerText = 'Simulador Activo';
-      el.scannerModeBadge.className = 'badge badge-neon';
-    }
+    updateGeminiBadge();
     
     // Close Modal
     el.modalSettings.classList.add('hidden');
     renderRecipes(); // Re-render in case filter mode affected lists
+  }
+
+  function updateGeminiBadge() {
+    const hasKey = !!state.settings.geminiApiKey;
+    const viaProxy = !!state.geminiProxyConfigured;
+    const geminiOn = !!state.settings.geminiModeActive;
+
+    if (el.scannerModeBadge) {
+      if (geminiOn && viaProxy) {
+        el.scannerModeBadge.textContent = 'Gemini vía servidor';
+        el.scannerModeBadge.classList.add('connected');
+      } else if (geminiOn && hasKey) {
+        el.scannerModeBadge.textContent = 'Gemini (clave local)';
+        el.scannerModeBadge.classList.add('connected');
+      } else {
+        el.scannerModeBadge.textContent = 'Simulador Activo';
+        el.scannerModeBadge.classList.remove('connected');
+      }
+    }
+
+    if (el.apiKeyStatus) {
+      if (viaProxy) {
+        el.apiKeyStatus.textContent = 'El servidor ya tiene GEMINI_API_KEY. Puedes escanear sin pegar una clave aquí.';
+      } else if (hasKey) {
+        el.apiKeyStatus.textContent = 'Clave guardada solo en este navegador (útil en GitHub Pages).';
+      } else {
+        el.apiKeyStatus.textContent = '';
+      }
+    }
+  }
+
+  async function probeGeminiProxy() {
+    try {
+      if (typeof fetch !== 'function') {
+        state.geminiProxyConfigured = false;
+        updateGeminiBadge();
+        return;
+      }
+      const controller = typeof AbortController === 'function' ? new AbortController() : null;
+      const timer = controller ? setTimeout(() => controller.abort(), 2500) : null;
+      const res = await fetch('./api/gemini-status', {
+        cache: 'no-store',
+        signal: controller ? controller.signal : undefined
+      });
+      if (timer) clearTimeout(timer);
+      if (!res.ok) {
+        state.geminiProxyConfigured = false;
+        updateGeminiBadge();
+        return;
+      }
+      const data = await res.json();
+      state.geminiProxyConfigured = !!data.configured;
+    } catch (_) {
+      state.geminiProxyConfigured = false;
+    }
+    updateGeminiBadge();
   }
 
   // ==========================================
@@ -591,6 +643,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   el.dropzone.addEventListener('click', (e) => {
+    if (e.target.closest('#camera-overlay')) return;
+    if (el.cameraOverlay && !el.cameraOverlay.classList.contains('hidden')) return;
     // Avoid double trigger if clicking file buttons inside
     if (e.target.tagName !== 'BUTTON' && !e.target.closest('.btn')) {
       el.fileInput.click();
@@ -644,14 +698,60 @@ document.addEventListener('DOMContentLoaded', () => {
     scanner.clearAll();
   });
 
+  async function openLiveCamera(e) {
+    if (e) e.stopPropagation();
+    if (!el.cameraOverlay || !el.cameraVideo) return;
+    try {
+      await scanner.startLiveCamera(el.cameraVideo);
+      el.cameraOverlay.classList.remove('hidden');
+      const prompt = document.getElementById('dropzone-prompt');
+      if (prompt) prompt.classList.add('hidden');
+    } catch (err) {
+      alert(err.message || 'No se pudo abrir la cámara. Comprueba los permisos o elige imágenes.');
+    }
+  }
+
+  function closeLiveCamera(e) {
+    if (e) e.stopPropagation();
+    scanner.stopLiveCamera(el.cameraVideo);
+    if (el.cameraOverlay) el.cameraOverlay.classList.add('hidden');
+    if (scanner.images.length === 0) {
+      const prompt = document.getElementById('dropzone-prompt');
+      if (prompt) prompt.classList.remove('hidden');
+    }
+  }
+
+  function captureLiveFrame(e) {
+    if (e) e.stopPropagation();
+    try {
+      scanner.captureLiveFrame(el.cameraVideo);
+    } catch (err) {
+      alert(err.message || 'No se pudo capturar el fotograma.');
+    }
+  }
+
+  if (el.btnOpenCamera) {
+    el.btnOpenCamera.addEventListener('click', openLiveCamera);
+  }
+  if (el.btnCaptureFrame) {
+    el.btnCaptureFrame.addEventListener('click', captureLiveFrame);
+  }
+  if (el.btnCloseCamera) {
+    el.btnCloseCamera.addEventListener('click', closeLiveCamera);
+  }
+  window.addEventListener('pagehide', () => {
+    scanner.stopLiveCamera(el.cameraVideo);
+  });
+
   // RUNNING THE MAIN SCANNING ENGINE
   el.btnStartScan.addEventListener('click', async (e) => {
     e.stopPropagation();
     
     if (state.settings.geminiModeActive) {
-      // 1. AI Gemini Active Mode
-      if (!state.settings.geminiApiKey) {
-        alert('Por favor, ingresa tu clave API de Gemini en la configuración de la barra superior para usar el modo AI.');
+      // 1. AI Gemini Active Mode (server proxy or local browser key)
+      const canUseGemini = state.geminiProxyConfigured || !!state.settings.geminiApiKey;
+      if (!canUseGemini) {
+        alert('Activa el proxy del servidor (GEMINI_API_KEY en .env) o pega tu clave de Gemini en Ajustes para usar el modo AI.');
         el.modalSettings.classList.remove('hidden');
         return;
       }
@@ -702,7 +802,8 @@ document.addEventListener('DOMContentLoaded', () => {
             scannedIds.forEach(id => addIngredientToState(id));
             scanner.clearAll();
           });
-        }
+        },
+        { useProxy: state.geminiProxyConfigured }
       );
 
     } else {
@@ -1561,6 +1662,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Settings modal
   el.btnSettings.addEventListener('click', () => {
     loadPersistedData();
+    probeGeminiProxy();
     el.modalSettings.classList.remove('hidden');
   });
   
@@ -2067,6 +2169,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 12. BOOTSTRAP INITIALIZATION
   // ==========================================
   loadPersistedData();
+  probeGeminiProxy();
   renderOfflineAccordion();
   updateIngredientsUI(); // Trigger initial recipes list state (empty warning)
 
