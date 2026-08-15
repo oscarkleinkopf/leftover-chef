@@ -662,15 +662,90 @@ function generateProceduralRecipe(availableIds, dietaryFilters = []) {
   };
 }
 
+function recipeBasePortions(recipe, fallback = 3) {
+  if (!recipe) return fallback;
+  if (typeof recipe.portions === 'number' && Number.isFinite(recipe.portions)) {
+    return recipe.portions;
+  }
+  const parsed = parseInt(String(recipe.portions || ''), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function pantryAvailableGrams(id, pantry = {}) {
+  const entry = pantry[id];
+  if (!entry) return 0;
+  if (typeof entry.grams === 'number' && Number.isFinite(entry.grams) && entry.grams >= 0) {
+    return entry.grams;
+  }
+  return Infinity;
+}
+
+function buildShoppingList(plan, pantry = {}, targetPortions = 3) {
+  const meals = Array.isArray(plan) ? plan : [];
+  const needed = {};
+
+  meals.forEach((meal) => {
+    const recipe = meal && (meal.recipe || meal);
+    if (!recipe || !Array.isArray(recipe.requiredIngredients)) return;
+    const scale = targetPortions / recipeBasePortions(recipe, targetPortions);
+    recipe.requiredIngredients.forEach((req) => {
+      if (!req || !req.id) return;
+      const grams = Math.round((Number(req.amount) || 0) * scale);
+      needed[req.id] = (needed[req.id] || 0) + grams;
+    });
+  });
+
+  const items = Object.keys(needed).map((id) => {
+    const dbItem = INGREDIENT_DATABASE.find((item) => item.id === id);
+    const requiredGrams = needed[id];
+    const haveRaw = pantryAvailableGrams(id, pantry);
+    const haveUnquantified = haveRaw === Infinity;
+    const buyGrams = haveUnquantified ? 0 : Math.max(0, requiredGrams - haveRaw);
+    return {
+      id,
+      name: dbItem ? dbItem.name : id,
+      category: dbItem ? dbItem.category : 'pantry',
+      staple: !!(dbItem && dbItem.staple),
+      requiredGrams,
+      haveGrams: haveUnquantified ? null : haveRaw,
+      haveUnquantified,
+      buyGrams
+    };
+  }).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+  const toBuy = items.filter((item) => item.buyGrams > 0);
+  const covered = items.filter((item) => item.buyGrams === 0);
+
+  return {
+    items,
+    toBuy,
+    covered,
+    buyCount: toBuy.length,
+    buyGramsTotal: toBuy.reduce((sum, item) => sum + item.buyGrams, 0)
+  };
+}
+
+function formatShoppingListText(shoppingList, title = 'Lista de compra Leftover Chef') {
+  const toBuy = (shoppingList && shoppingList.toBuy) || [];
+  if (toBuy.length === 0) {
+    return `${title}\n\n✅ Tienes todo lo necesario en la despensa.`;
+  }
+  const lines = toBuy.map((item) => {
+    const have = item.haveUnquantified ? 'en nevera' : `${item.haveGrams || 0}g en nevera`;
+    return `• ${item.buyGrams}g de ${item.name} (necesitas ${item.requiredGrams}g, ${have})`;
+  });
+  return `${title}\n\n${lines.join('\n')}\n\nGenerado con Leftover Chef 🍳`;
+}
+
 /**
- * Generates a structured 3-Day Zero-Waste Meal Plan
- * Returns 6 distinct meals (3 Days x Lunch & Dinner)
+ * Generates a structured 7-day zero-waste meal plan (lunch + dinner).
+ * Earlier days prefer recipes that consume pantry items close to expiry.
  */
-function generateWeeklyMealPlan(availableIds, pantry = {}) {
+function generateWeeklyMealPlan(availableIds, pantry = {}, options = {}) {
+  const dayCount = options.dayCount || 7;
   const matches = findMatchingRecipes(availableIds, pantry);
   const plan = [];
-
-  const days = ['Día 1', 'Día 2', 'Día 3'];
+  const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const types = [
     { name: '☀️ Almuerzo Principal' },
     { name: '🌙 Cena Cero Desperdicio' }
@@ -678,27 +753,33 @@ function generateWeeklyMealPlan(availableIds, pantry = {}) {
 
   let recipeIndex = 0;
 
-  days.forEach((day, dIdx) => {
+  for (let dIdx = 0; dIdx < dayCount; dIdx++) {
     types.forEach((type, tIdx) => {
       let selectedRecipe = null;
-      if (matches[recipeIndex]) {
-        selectedRecipe = matches[recipeIndex].recipe;
+      if (matches.length > 0) {
+        selectedRecipe = matches[recipeIndex % matches.length].recipe;
         recipeIndex++;
       } else {
-        // Procedural fallback meal
         selectedRecipe = generateProceduralRecipe(availableIds);
       }
+
+      const usedPantryGrams = (selectedRecipe.requiredIngredients || []).reduce((sum, req) => {
+        const have = pantryAvailableGrams(req.id, pantry);
+        if (have === 0) return sum;
+        const amount = Number(req.amount) || 0;
+        return sum + (have === Infinity ? amount : Math.min(amount, have));
+      }, 0);
 
       plan.push({
         id: `plan_d${dIdx + 1}_t${tIdx + 1}`,
         dayNumber: dIdx + 1,
-        dayLabel: day,
+        dayLabel: dayNames[dIdx] || `Día ${dIdx + 1}`,
         mealType: type.name,
         recipe: selectedRecipe,
-        savedGrams: Math.floor(Math.random() * 180 + 120)
+        savedGrams: Math.round(usedPantryGrams)
       });
     });
-  });
+  }
 
   return plan;
 }
@@ -711,6 +792,10 @@ window.INGREDIENT_SWAPS = INGREDIENT_SWAPS;
 window.calculateRecipeMatch = calculateRecipeMatch;
 window.generateProceduralRecipe = generateProceduralRecipe;
 window.generateWeeklyMealPlan = generateWeeklyMealPlan;
+window.buildShoppingList = buildShoppingList;
+window.formatShoppingListText = formatShoppingListText;
+window.pantryAvailableGrams = pantryAvailableGrams;
+window.recipeBasePortions = recipeBasePortions;
 window.daysUntilExpiry = daysUntilExpiry;
 window.getExpiryStatus = getExpiryStatus;
 window.defaultExpiryDate = defaultExpiryDate;

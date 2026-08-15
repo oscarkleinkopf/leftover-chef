@@ -81,10 +81,10 @@ try {
   const swPath = path.join(rootDir, 'service-worker.js');
   const swContent = fs.readFileSync(swPath, 'utf8');
 
-  if (swContent.includes("CACHE_NAME = 'leftover-chef-v5'") || swContent.includes('CACHE_NAME = "leftover-chef-v5"')) {
-    logPass('service-worker.js correctly bumped CACHE_NAME to leftover-chef-v5.');
+  if (swContent.includes("CACHE_NAME = 'leftover-chef-v6'") || swContent.includes('CACHE_NAME = "leftover-chef-v6"')) {
+    logPass('service-worker.js correctly bumped CACHE_NAME to leftover-chef-v6.');
   } else {
-    logFail('service-worker.js CACHE_NAME is not bumped to leftover-chef-v5.');
+    logFail('service-worker.js CACHE_NAME is not bumped to leftover-chef-v6.');
   }
 } catch (e) {
   logFail(`Error reading service-worker.js: ${e.message}`);

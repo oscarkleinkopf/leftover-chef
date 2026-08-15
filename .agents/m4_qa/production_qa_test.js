@@ -69,8 +69,8 @@ console.log('=== M4 PRODUCTION QA SUITE ===\n');
   const html = read('index.html');
   const app = read('js/app.js');
 
-  if (sw.includes("CACHE_NAME = 'leftover-chef-v5'")) pass('Service worker cache is leftover-chef-v5');
-  else fail('Service worker CACHE_NAME is not leftover-chef-v5');
+  if (sw.includes("CACHE_NAME = 'leftover-chef-v6'")) pass('Service worker cache is leftover-chef-v6');
+  else fail('Service worker CACHE_NAME is not leftover-chef-v6');
 
   const requiredAssets = [
     './', './index.html', './css/styles.css', './js/recipes.js', './js/scanner.js',
