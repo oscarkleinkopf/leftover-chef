@@ -248,6 +248,7 @@ const PRESETS_RECIPES = [
       { id: 'aceite', amount: 35, display: '35g de Aceite de Oliva' }
     ],
     optionalIngredients: [
+      { id: 'tomate', display: 'Tomate fresco maduro (ideal si está a punto de caducar)' },
       { id: 'sal', display: 'Sal y pimienta para condimentar el pollo' },
       { id: 'pimienta', display: 'Especias al gusto (orégano, tomillo)' }
     ],
@@ -357,8 +358,125 @@ function calculateRecipeMatch(recipe, availableIds) {
     matchedCount,
     totalRequired: reqIngs.length,
     missingRequired,
-    missingStaples
+    missingStaples,
+    urgencyBoost: 0,
+    urgentIngredientIds: []
   };
+}
+
+function toDateOnly(value) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  const d = value instanceof Date ? new Date(value) : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function daysUntilExpiry(expiresAt, now = new Date()) {
+  const exp = toDateOnly(expiresAt);
+  const today = toDateOnly(now);
+  if (!exp || !today) return null;
+  return Math.round((exp.getTime() - today.getTime()) / 86400000);
+}
+
+function getExpiryStatus(expiresAt, now = new Date()) {
+  const days = daysUntilExpiry(expiresAt, now);
+  if (days === null) {
+    return { level: 'unknown', days: null, label: '', cssClass: '' };
+  }
+  if (days < 0) {
+    return { level: 'expired', days, label: `Caducó hace ${Math.abs(days)}d`, cssClass: 'shelf-urgent' };
+  }
+  if (days === 0) {
+    return { level: 'expired', days, label: 'Caduca hoy', cssClass: 'shelf-urgent' };
+  }
+  if (days <= 2) {
+    return { level: 'urgent', days, label: `${days}d`, cssClass: 'shelf-urgent' };
+  }
+  if (days <= 7) {
+    return { level: 'warning', days, label: `${days}d`, cssClass: 'shelf-warning' };
+  }
+  return { level: 'fresh', days, label: `${days}d`, cssClass: 'shelf-fresh' };
+}
+
+function defaultExpiryDate(ingredientId, now = new Date()) {
+  const item = INGREDIENT_DATABASE.find((i) => i.id === ingredientId);
+  const shelf = item && typeof item.shelfDays === 'number' ? item.shelfDays : 7;
+  const d = toDateOnly(now) || new Date();
+  d.setDate(d.getDate() + shelf);
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
+function applyPantryUrgency(match, recipe, pantry = {}, now = new Date()) {
+  const considered = [
+    ...(recipe.requiredIngredients || []),
+    ...(recipe.optionalIngredients || [])
+  ];
+  const urgentIngredientIds = [];
+  let urgencyBoost = 0;
+
+  considered.forEach((req) => {
+    const entry = pantry[req.id];
+    if (!entry || !entry.expiresAt) return;
+    const status = getExpiryStatus(entry.expiresAt, now);
+    if (status.level === 'expired') {
+      urgencyBoost += 3;
+      urgentIngredientIds.push(req.id);
+    } else if (status.level === 'urgent') {
+      urgencyBoost += 2;
+      urgentIngredientIds.push(req.id);
+    } else if (status.level === 'warning') {
+      urgencyBoost += 1;
+      urgentIngredientIds.push(req.id);
+    }
+  });
+
+  return {
+    ...match,
+    urgencyBoost,
+    urgentIngredientIds
+  };
+}
+
+function findMatchingRecipes(availableIds, pantry = {}, dietFilters = [], now = new Date()) {
+  const results = [];
+
+  PRESETS_RECIPES.forEach((recipe) => {
+    if (dietFilters.length > 0 && !dietFilters.every((f) => recipe.diet.includes(f))) return;
+    let match = calculateRecipeMatch(recipe, availableIds);
+    if (match.score <= 0) return;
+    match = applyPantryUrgency(match, recipe, pantry, now);
+    results.push({ recipe, match });
+  });
+
+  results.sort((a, b) => {
+    if (b.match.urgencyBoost !== a.match.urgencyBoost) {
+      return b.match.urgencyBoost - a.match.urgencyBoost;
+    }
+    return b.match.score - a.match.score;
+  });
+
+  return results;
+}
+
+function listExpiringPantryItems(pantry, now = new Date(), withinDays = 7) {
+  return Object.values(pantry || {})
+    .map((entry) => {
+      const status = getExpiryStatus(entry.expiresAt, now);
+      const dbItem = INGREDIENT_DATABASE.find((item) => item.id === entry.id);
+      return {
+        ...entry,
+        name: dbItem ? dbItem.name : entry.id,
+        status
+      };
+    })
+    .filter((item) => item.status.days !== null && item.status.days <= withinDays)
+    .sort((a, b) => a.status.days - b.status.days);
 }
 
 /**
@@ -548,8 +666,8 @@ function generateProceduralRecipe(availableIds, dietaryFilters = []) {
  * Generates a structured 3-Day Zero-Waste Meal Plan
  * Returns 6 distinct meals (3 Days x Lunch & Dinner)
  */
-function generateWeeklyMealPlan(availableIds) {
-  const matches = findMatchingRecipes(availableIds);
+function generateWeeklyMealPlan(availableIds, pantry = {}) {
+  const matches = findMatchingRecipes(availableIds, pantry);
   const plan = [];
 
   const days = ['Día 1', 'Día 2', 'Día 3'];
@@ -593,3 +711,9 @@ window.INGREDIENT_SWAPS = INGREDIENT_SWAPS;
 window.calculateRecipeMatch = calculateRecipeMatch;
 window.generateProceduralRecipe = generateProceduralRecipe;
 window.generateWeeklyMealPlan = generateWeeklyMealPlan;
+window.daysUntilExpiry = daysUntilExpiry;
+window.getExpiryStatus = getExpiryStatus;
+window.defaultExpiryDate = defaultExpiryDate;
+window.applyPantryUrgency = applyPantryUrgency;
+window.findMatchingRecipes = findMatchingRecipes;
+window.listExpiringPantryItems = listExpiringPantryItems;

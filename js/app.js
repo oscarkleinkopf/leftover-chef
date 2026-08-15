@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   const state = {
     activeIngredients: new Set(),      // Set of lowercase ingredient IDs
+    pantry: {},                         // id -> { id, grams, addedAt, expiresAt }
     customIngredients: [],              // Array of {id, name} manually created by user
     selectedDietFilters: new Set(),     // Selected dietary tags
     portions: 3,                        // Portions count
@@ -132,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ingredientsCloud: document.getElementById('ingredients-cloud'),
     activeCount: document.getElementById('active-count'),
     btnClearAllIngredients: document.getElementById('btn-clear-all-ingredients'),
+    pantryExpiryAlert: document.getElementById('pantry-expiry-alert'),
     
     // Filters & Recipe Output
     dietFilters: document.getElementById('diet-filters'),
@@ -352,6 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const label = document.createElement('label');
       label.className = `ingredient-checkbox-label ${isSelected ? 'selected' : ''}`;
+      label.dataset.ingredientId = ing.id;
       
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
@@ -368,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
       label.appendChild(checkbox);
       
       const span = document.createElement('span');
-      span.innerText = ing.name;
+      span.textContent = ing.name;
       label.appendChild(span);
       
       el.accordionPanel.appendChild(label);
@@ -405,7 +408,8 @@ document.addEventListener('DOMContentLoaded', () => {
           id: customId,
           name: text,
           category: 'pantry',
-          kcal: 50, protein: 1, carbs: 10, fat: 0.5 // Default average estimates
+          kcal: 50, protein: 1, carbs: 10, fat: 0.5,
+          shelfDays: 7
         });
       }
       
@@ -419,52 +423,143 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 6. INGREDIENTS STATE MUTATORS & TAGS
   // ==========================================
-  function addIngredientToState(id) {
+  function createPantryEntry(id, overrides = {}) {
+    return {
+      id,
+      grams: overrides.grams ?? null,
+      addedAt: overrides.addedAt || new Date().toISOString(),
+      expiresAt: overrides.expiresAt || window.defaultExpiryDate(id)
+    };
+  }
+
+  function ensurePantryEntry(id) {
+    if (!state.pantry[id]) {
+      state.pantry[id] = createPantryEntry(id);
+    }
     state.activeIngredients.add(id);
+    return state.pantry[id];
+  }
+
+  function addIngredientToState(id) {
+    ensurePantryEntry(id);
     updateIngredientsUI();
   }
 
   function removeIngredientFromState(id) {
     state.activeIngredients.delete(id);
+    delete state.pantry[id];
     updateIngredientsUI();
   }
 
   function clearAllIngredients() {
     state.activeIngredients.clear();
+    state.pantry = {};
     updateIngredientsUI();
+  }
+
+  function updatePantryField(id, patch) {
+    if (!state.pantry[id]) ensurePantryEntry(id);
+    state.pantry[id] = { ...state.pantry[id], ...patch, id };
+    updateIngredientsUI();
+  }
+
+  function sortedPantryIds() {
+    return Object.keys(state.pantry).sort((a, b) => {
+      const aDays = window.daysUntilExpiry(state.pantry[a].expiresAt);
+      const bDays = window.daysUntilExpiry(state.pantry[b].expiresAt);
+      const aVal = aDays === null ? 9999 : aDays;
+      const bVal = bDays === null ? 9999 : bDays;
+      return aVal - bVal;
+    });
+  }
+
+  function renderPantryAlert() {
+    if (!el.pantryExpiryAlert) return;
+    const expiring = window.listExpiringPantryItems(state.pantry, new Date(), 2);
+    if (expiring.length === 0) {
+      el.pantryExpiryAlert.classList.add('hidden');
+      el.pantryExpiryAlert.innerHTML = '';
+      return;
+    }
+    const names = expiring.map((item) => item.name).join(', ');
+    const todayCount = expiring.filter((item) => item.status.days <= 0).length;
+    const headline = todayCount > 0
+      ? `${todayCount} caduca${todayCount === 1 ? '' : 'n'} hoy`
+      : `${expiring.length} caduca${expiring.length === 1 ? '' : 'n'} en 48h`;
+    el.pantryExpiryAlert.classList.remove('hidden');
+    el.pantryExpiryAlert.innerHTML = `⚠️ <strong>${headline}:</strong> ${names}. Las recetas que los usan suben al principio.`;
   }
 
   function updateIngredientsUI() {
     el.activeCount.innerText = state.activeIngredients.size;
     el.ingredientsCloud.innerHTML = '';
+    renderPantryAlert();
     
     if (state.activeIngredients.size === 0) {
-      el.ingredientsCloud.innerHTML = '<div class="empty-cloud-message">Ningún ingrediente seleccionado. Sube una foto o agrégalos en el panel offline inferior.</div>';
+      el.ingredientsCloud.innerHTML = '<div class="empty-cloud-message">Ningún ingrediente en la despensa. Sube una foto o agrégalos en el panel offline inferior.</div>';
       renderRecipes();
       renderOfflineAccordion();
+      saveProfiles();
       return;
     }
 
-    state.activeIngredients.forEach(id => {
+    sortedPantryIds().forEach(id => {
       const ing = window.INGREDIENT_DATABASE.find(item => item.id === id);
       const name = ing ? ing.name : id;
-      
-      let badgeHtml = '';
-      if (ing && ing.shelfDays !== undefined) {
-        if (ing.shelfDays <= 3) {
-          badgeHtml = `<span class="shelf-badge shelf-urgent">🔴 < ${ing.shelfDays}d</span>`;
-        } else if (ing.shelfDays <= 7) {
-          badgeHtml = `<span class="shelf-badge shelf-warning">🟡 < ${ing.shelfDays}d</span>`;
-        } else {
-          badgeHtml = `<span class="shelf-badge shelf-fresh">🟢 < ${ing.shelfDays}d</span>`;
-        }
-      }
+      const entry = state.pantry[id] || createPantryEntry(id);
+      const status = window.getExpiryStatus(entry.expiresAt);
 
       const tag = document.createElement('div');
-      tag.className = 'ingredient-tag';
-      tag.innerHTML = `${name} ${badgeHtml} <span class="remove-icon">&times;</span>`;
-      tag.addEventListener('click', () => removeIngredientFromState(id));
-      
+      tag.className = `ingredient-tag pantry-tag ${status.cssClass ? 'is-' + status.level : ''}`;
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'tag-name';
+      nameSpan.textContent = name;
+      tag.appendChild(nameSpan);
+
+      const gramsInput = document.createElement('input');
+      gramsInput.type = 'number';
+      gramsInput.min = '0';
+      gramsInput.step = '50';
+      gramsInput.className = 'tag-grams';
+      gramsInput.placeholder = 'g';
+      gramsInput.setAttribute('aria-label', `Gramos de ${name}`);
+      gramsInput.value = entry.grams != null ? String(entry.grams) : '';
+      gramsInput.addEventListener('click', (e) => e.stopPropagation());
+      gramsInput.addEventListener('change', (e) => {
+        const raw = e.target.value;
+        const grams = raw === '' ? null : Number(raw);
+        updatePantryField(id, { grams: Number.isFinite(grams) ? grams : null });
+      });
+      tag.appendChild(gramsInput);
+
+      const expiryInput = document.createElement('input');
+      expiryInput.type = 'date';
+      expiryInput.className = 'tag-expiry';
+      expiryInput.setAttribute('aria-label', `Caducidad de ${name}`);
+      expiryInput.value = entry.expiresAt || '';
+      expiryInput.addEventListener('click', (e) => e.stopPropagation());
+      expiryInput.addEventListener('change', (e) => {
+        updatePantryField(id, { expiresAt: e.target.value || window.defaultExpiryDate(id) });
+      });
+      tag.appendChild(expiryInput);
+
+      const badge = document.createElement('span');
+      badge.className = `shelf-badge ${status.cssClass || 'shelf-fresh'}`;
+      badge.innerText = status.label || '—';
+      tag.appendChild(badge);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'remove-icon';
+      removeBtn.setAttribute('aria-label', `Quitar ${name}`);
+      removeBtn.innerHTML = '&times;';
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeIngredientFromState(id);
+      });
+      tag.appendChild(removeBtn);
+
       el.ingredientsCloud.appendChild(tag);
     });
 
@@ -665,43 +760,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const availableIdsArray = Array.from(state.activeIngredients);
     const dietFiltersArray = Array.from(state.selectedDietFilters);
-    let matchedRecipesList = [];
-
-    // 1. Score all curated preset recipes
-    window.PRESETS_RECIPES.forEach(recipe => {
-      const match = window.calculateRecipeMatch(recipe, availableIdsArray);
-      
-      // Filter by dietary options if specified
-      let dietMatch = true;
-      if (dietFiltersArray.length > 0) {
-        dietMatch = dietFiltersArray.every(f => recipe.diet.includes(f));
-      }
-
-      if (dietMatch && match.score > 0) {
-        matchedRecipesList.push({
-          recipe: recipe,
-          match: match
-        });
-      }
-    });
+    let matchedRecipesList = window.findMatchingRecipes(availableIdsArray, state.pantry, dietFiltersArray);
 
     // 2. Dynamic Procedural AI Recipe fallback generator
     // If user has elements, always offer a highly custom procedurally designed cooking path!
     const proceduralRecipe = window.generateProceduralRecipe(availableIdsArray, dietFiltersArray);
     if (proceduralRecipe) {
-      // Procedural recipe matches all active items by definition
+      const proceduralMatch = window.applyPantryUrgency({
+        score: 100,
+        missingRequired: [],
+        missingStaples: []
+      }, proceduralRecipe, state.pantry);
       matchedRecipesList.push({
         recipe: proceduralRecipe,
-        match: {
-          score: 100,
-          missingRequired: [],
-          missingStaples: []
+        match: proceduralMatch
+      });
+      matchedRecipesList.sort((a, b) => {
+        if (b.match.urgencyBoost !== a.match.urgencyBoost) {
+          return b.match.urgencyBoost - a.match.urgencyBoost;
         }
+        return b.match.score - a.match.score;
       });
     }
-
-    // Sort by descending compatibility score
-    matchedRecipesList.sort((a, b) => b.match.score - a.match.score);
 
     if (matchedRecipesList.length === 0) {
       el.recipesGrid.innerHTML = `
@@ -718,6 +798,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const rec = item.recipe;
       const score = item.match.score;
       const missing = item.match.missingRequired;
+      const urgentIds = item.match.urgentIngredientIds || [];
       
       const card = document.createElement('div');
       card.className = 'card glass recipe-card';
@@ -736,6 +817,13 @@ document.addEventListener('DOMContentLoaded', () => {
       scoreBadge.className = 'match-ring-badge';
       scoreBadge.innerText = `${score}% Coincidencia`;
       imgWrapper.appendChild(scoreBadge);
+
+      if (urgentIds.length > 0) {
+        const urgencyBadge = document.createElement('div');
+        urgencyBadge.className = 'urgency-use-badge';
+        urgencyBadge.innerText = `🔥 Usa ${urgentIds.length} que caduca${urgentIds.length === 1 ? '' : 'n'}`;
+        imgWrapper.appendChild(urgencyBadge);
+      }
       
       card.appendChild(imgWrapper);
 
@@ -848,6 +936,15 @@ document.addEventListener('DOMContentLoaded', () => {
       
       li.appendChild(icon);
       li.appendChild(text);
+      const pantryEntry = state.pantry[req.id];
+      const expiry = pantryEntry ? window.getExpiryStatus(pantryEntry.expiresAt) : null;
+      if (expiry && (expiry.level === 'expired' || expiry.level === 'urgent' || expiry.level === 'warning')) {
+        li.classList.add('expiring-ingredient');
+        const expHint = document.createElement('span');
+        expHint.className = `shelf-badge ${expiry.cssClass}`;
+        expHint.innerText = expiry.label;
+        li.appendChild(expHint);
+      }
 
       // AI Ingredient Swap Trigger
       const swaps = window.INGREDIENT_SWAPS?.[req.id];
@@ -1713,7 +1810,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Selecciona o escanea ingredientes antes de generar tu plan semanal Cero Desperdicio.');
         return;
       }
-      const plan = window.generateWeeklyMealPlan(activeIds);
+      const plan = window.generateWeeklyMealPlan(activeIds, state.pantry);
       renderMealPlan(plan);
       modalMealPlan.classList.remove('hidden');
     });
@@ -1774,7 +1871,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 13. MULTI-USER PROFILES & REFRIGERATOR ISOLATION
   // ==========================================
   let profiles = [
-    { id: 'prof_default', name: 'Familia Principal', avatar: '👨‍👩‍👧‍👦', activeIngredients: [], bookmarks: [] }
+    { id: 'prof_default', name: 'Familia Principal', avatar: '👨‍👩‍👧‍👦', activeIngredients: [], pantry: {}, bookmarks: [] }
   ];
   let activeProfileId = 'prof_default';
 
@@ -1790,11 +1887,33 @@ document.addEventListener('DOMContentLoaded', () => {
     syncCurrentProfileToState();
   }
 
+  function normalizePantry(rawPantry, ingredientIds) {
+    const pantry = {};
+    const ids = new Set(Array.isArray(ingredientIds) ? ingredientIds : []);
+    if (rawPantry && typeof rawPantry === 'object' && !Array.isArray(rawPantry)) {
+      Object.keys(rawPantry).forEach((id) => {
+        const entry = rawPantry[id];
+        if (!entry || typeof entry !== 'object') return;
+        pantry[id] = createPantryEntry(id, {
+          grams: typeof entry.grams === 'number' ? entry.grams : null,
+          addedAt: entry.addedAt,
+          expiresAt: entry.expiresAt
+        });
+        ids.add(id);
+      });
+    }
+    ids.forEach((id) => {
+      if (!pantry[id]) pantry[id] = createPantryEntry(id);
+    });
+    return pantry;
+  }
+
   function saveProfiles() {
     const activeProf = profiles.find(p => p.id === activeProfileId);
     if (activeProf) {
       activeProf.activeIngredients = Array.from(state.activeIngredients);
-      activeProf.bookmarks = Array.from(state.bookmarks);
+      activeProf.pantry = { ...state.pantry };
+      activeProf.bookmarks = Array.isArray(state.bookmarks) ? state.bookmarks : Array.from(state.bookmarks || []);
     }
     localStorage.setItem('leftover_chef_profiles', JSON.stringify(profiles));
     localStorage.setItem('leftover_chef_active_profile_id', activeProfileId);
@@ -1804,8 +1923,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeProf = profiles.find(p => p.id === activeProfileId) || profiles[0];
     if (activeProf) {
       activeProfileId = activeProf.id;
-      state.activeIngredients = new Set(activeProf.activeIngredients || []);
-      state.bookmarks = new Set(activeProf.bookmarks || []);
+      state.pantry = normalizePantry(activeProf.pantry, activeProf.activeIngredients);
+      state.activeIngredients = new Set(Object.keys(state.pantry));
+      state.bookmarks = Array.isArray(activeProf.bookmarks) ? activeProf.bookmarks : [];
 
       const hAvatar = document.getElementById('header-profile-avatar');
       const hName = document.getElementById('header-profile-name');
@@ -1893,6 +2013,7 @@ document.addEventListener('DOMContentLoaded', () => {
         name: name,
         avatar: avatarSelect.value || '👨‍👩‍👧‍👦',
         activeIngredients: [],
+        pantry: {},
         bookmarks: []
       };
 
