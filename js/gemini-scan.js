@@ -59,7 +59,7 @@ DEBES responder ÚNICAMENTE con un objeto JSON válido que siga exactamente la s
 
   function normalizeImages(images) {
     if (!Array.isArray(images)) return [];
-    return images.slice(0, MAX_IMAGES).map((img) => {
+    return images.map((img) => {
       const mimeType = String((img && (img.mimeType || img.mime)) || 'image/jpeg').toLowerCase();
       let data = String((img && img.data) || '');
       const comma = data.indexOf(',');
@@ -67,7 +67,7 @@ DEBES responder ÚNICAMENTE con un objeto JSON válido que siga exactamente la s
         data = data.slice(comma + 1);
       }
       return { mimeType, data };
-    }).filter((img) => img.data && ALLOWED_MIME[img.mimeType]);
+    }).filter((img) => img.data && ALLOWED_MIME[img.mimeType]).slice(0, MAX_IMAGES);
   }
 
   function buildGeminiRequestBody(images, dietaryFilters, targetModel) {
