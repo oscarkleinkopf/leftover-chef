@@ -60,8 +60,8 @@ console.log("   ✅ css/styles.css checks passed.");
 
 // 3. Verify service-worker.js cache bump
 console.log("3. Checking service-worker.js CACHE_NAME...");
-if (!swContent.includes("const CACHE_NAME = 'leftover-chef-v5';")) {
-  throw new Error("service-worker.js CACHE_NAME is not set to 'leftover-chef-v5'!");
+if (!swContent.includes("const CACHE_NAME = 'leftover-chef-v7';")) {
+  throw new Error("service-worker.js CACHE_NAME is not set to 'leftover-chef-v7'!");
 }
 console.log("   ✅ service-worker.js checks passed.");
 
@@ -84,8 +84,10 @@ window.speechSynthesis = { speak: () => {}, cancel: () => {} };
 
 // Evaluate recipes.js and scanner.js mock if needed, then app.js
 const recipesContent = fs.readFileSync(path.join(projectRoot, 'js/recipes.js'), 'utf8');
+const geminiContent = fs.readFileSync(path.join(projectRoot, 'js/gemini-scan.js'), 'utf8');
 const scannerContent = fs.readFileSync(path.join(projectRoot, 'js/scanner.js'), 'utf8');
 
+window.eval(geminiContent);
 window.eval(recipesContent);
 window.eval(scannerContent);
 

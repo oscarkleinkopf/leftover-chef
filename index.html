@@ -70,14 +70,22 @@
           </div>
           
           <div class="scanner-dropzone" id="dropzone">
-            <input type="file" id="file-input" accept="image/*" multiple style="display:none;">
+            <input type="file" id="file-input" accept="image/*" capture="environment" multiple style="display:none;">
             <div class="dropzone-content" id="dropzone-prompt">
               <div class="pulse-ring">
                 <svg viewBox="0 0 24 24" class="cloud-icon"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3zm-5.55-8h-2.9v3H8l4 4 4-4h-2.55z"/></svg>
               </div>
               <h4>Arrastra tus fotos de la nevera aquí</h4>
-              <p>O haz clic para tomar fotos con tu cámara</p>
+              <p>O abre la cámara en vivo / elige imágenes</p>
               <span class="btn btn-secondary">Seleccionar Imágenes</span>
+            </div>
+
+            <div id="camera-overlay" class="camera-overlay hidden" role="dialog" aria-label="Cámara en vivo">
+              <video id="camera-video" autoplay playsinline muted></video>
+              <div class="camera-overlay-actions">
+                <button type="button" class="btn btn-primary" id="btn-capture-frame">📸 Capturar</button>
+                <button type="button" class="btn btn-tertiary" id="btn-close-camera">Cerrar cámara</button>
+              </div>
             </div>
             
             <!-- Real-time Interactive Scanning Canvas Container -->
@@ -96,6 +104,9 @@
           <div class="scanner-actions hidden" id="scanner-actions">
             <button id="btn-cancel-scan" class="btn btn-tertiary">Limpiar</button>
             <button id="btn-start-scan" class="btn btn-primary btn-glow">🚀 Escanear Ingredientes</button>
+          </div>
+          <div class="scanner-capture-bar">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-open-camera">📷 Cámara en vivo</button>
           </div>
         </div>
 
@@ -220,8 +231,8 @@
               <input type="password" id="api-key-input" placeholder="AIzaSy...">
               <button class="toggle-password-btn" id="btn-toggle-password">👁️</button>
             </div>
-            <p class="helper-text">
-              ¿No tienes una clave? Consigue una gratis en <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>. Se almacena localmente y con total privacidad en tu navegador.
+            <p class="helper-text" id="gemini-key-helper">
+              Si el servidor tiene <code>GEMINI_API_KEY</code>, no hace falta pegar nada aquí. Como respaldo (p. ej. GitHub Pages) puedes usar una clave de <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>; se guarda solo en este navegador.
             </p>
             <div id="api-key-status" class="api-key-status"></div>
           </div>
@@ -706,6 +717,7 @@
   <audio id="audio-timer-done" src="https://assets.mixkit.co/active_storage/sfx/911/911-84.wav" preload="auto"></audio>
 
   <!-- JS Dependencies -->
+  <script src="js/gemini-scan.js"></script>
   <script src="js/recipes.js"></script>
   <script src="js/scanner.js"></script>
   <script src="js/app.js"></script>

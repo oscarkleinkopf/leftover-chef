@@ -5,6 +5,7 @@ const { JSDOM } = require('jsdom');
 
 const rootDir = path.join(__dirname, '..', '..');
 const recipesJs = fs.readFileSync(path.join(rootDir, 'js', 'recipes.js'), 'utf8');
+const geminiJs = fs.readFileSync(path.join(rootDir, 'js', 'gemini-scan.js'), 'utf8');
 const scannerJs = fs.readFileSync(path.join(rootDir, 'js', 'scanner.js'), 'utf8');
 const appJs = fs.readFileSync(path.join(rootDir, 'js', 'app.js'), 'utf8');
 const html = fs.readFileSync(path.join(rootDir, 'index.html'), 'utf8');
@@ -138,6 +139,7 @@ function bootApp(storageSeed = {}) {
     createLinearGradient() { return { addColorStop() {} }; }
   });
   window.eval(recipesJs);
+  window.eval(geminiJs);
   window.eval(scannerJs);
   window.eval(appJs);
   window.document.dispatchEvent(new window.Event('DOMContentLoaded'));

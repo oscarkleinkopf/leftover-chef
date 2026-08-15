@@ -7,7 +7,7 @@
 ## ✨ Características Premium
 
 ### 1. Escaneo Inteligente Multi-Foto 📸
-Sube una o varias fotos del interior de tu refrigerador. El escáner ejecuta una animación secuencial de láser en canvas y dibuja cajas de selección computacionales sobre los ingredientes detectados, agrupando los elementos encontrados en tiempo real.
+Sube una o varias fotos del interior de tu refrigerador, o abre la **cámara en vivo** y captura fotogramas. El escáner ejecuta una animación secuencial de láser en canvas y dibuja cajas de selección computacionales sobre los ingredientes detectados, agrupando los elementos encontrados en tiempo real. Con `GEMINI_API_KEY` en el servidor, el análisis sale por un proxy local y la clave no se pega en el navegador.
 
 ### 2. Distribución en Niveles (Varoma Stack) 🥘
 Visualiza exactamente dónde se cocinan los ingredientes en tu Thermomix. La app mapea de forma dinámica la distribución física en cuatro niveles:
@@ -46,6 +46,14 @@ npm start
 ```
 Abre en tu navegador la URL: `http://localhost:3000`.
 
+Para escanear la nevera con Gemini **sin pegar la API key en el navegador**, crea un `.env` (nunca se sube a git):
+
+```ini
+GEMINI_API_KEY=tu_clave_de_google_ai_studio
+```
+
+Hay un `.env.example` de plantilla. Con esa variable, `npm start` activa `POST /api/gemini-scan` y la app usa el proxy. En GitHub Pages no hay servidor Node: el modo Gemini sigue pudiendo usar una clave local en Ajustes.
+
 ### 2. Iniciar el Vigilante de Auto-Sync
 Para mantener tus cambios respaldados en GitHub de forma automática mientras editas, inicia el vigilante:
 ```bash
@@ -56,8 +64,9 @@ Opcional: `npm run start:all` levanta servidor + auto-sync solo si `.env` contie
 
 ### 3. QA automatizado
 ```bash
-npm test          # M3 roadmap suites + M4 production QA
+npm test          # M3 + M4 + despensa + proxy Gemini / cámara
 npm run test:m4   # Solo verificación R3 / PWA / HTTP smoke
+npm run test:gemini
 ```
 
 ### 4. GitHub Pages

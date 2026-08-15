@@ -81,10 +81,10 @@ try {
   const swPath = path.join(rootDir, 'service-worker.js');
   const swContent = fs.readFileSync(swPath, 'utf8');
 
-  if (swContent.includes("CACHE_NAME = 'leftover-chef-v5'") || swContent.includes('CACHE_NAME = "leftover-chef-v5"')) {
-    logPass('service-worker.js correctly bumped CACHE_NAME to leftover-chef-v5.');
+  if (swContent.includes("CACHE_NAME = 'leftover-chef-v7'") || swContent.includes('CACHE_NAME = "leftover-chef-v7"')) {
+    logPass('service-worker.js correctly bumped CACHE_NAME to leftover-chef-v7.');
   } else {
-    logFail('service-worker.js CACHE_NAME is not bumped to leftover-chef-v5.');
+    logFail('service-worker.js CACHE_NAME is not bumped to leftover-chef-v7.');
   }
 } catch (e) {
   logFail(`Error reading service-worker.js: ${e.message}`);
@@ -112,9 +112,11 @@ try {
 
   // Load scripts into JSDOM environment
   const recipesJs = fs.readFileSync(path.join(rootDir, 'js', 'recipes.js'), 'utf8');
+  const geminiJs = fs.readFileSync(path.join(rootDir, 'js', 'gemini-scan.js'), 'utf8');
   const scannerJs = fs.readFileSync(path.join(rootDir, 'js', 'scanner.js'), 'utf8');
   const appJs = fs.readFileSync(path.join(rootDir, 'js', 'app.js'), 'utf8');
 
+  window.eval(geminiJs);
   window.eval(recipesJs);
   window.eval(scannerJs);
 

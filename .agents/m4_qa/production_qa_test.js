@@ -47,7 +47,7 @@ console.log('=== M4 PRODUCTION QA SUITE ===\n');
 // 2) Syntax checks
 // --------------------------------------------------------------------------
 {
-  const files = ['js/app.js', 'js/recipes.js', 'js/scanner.js', 'service-worker.js', 'server.js', 'start.js'];
+  const files = ['js/app.js', 'js/recipes.js', 'js/scanner.js', 'js/gemini-scan.js', 'service-worker.js', 'server.js', 'start.js'];
   let syntaxOk = true;
   for (const f of files) {
     try {
@@ -69,12 +69,12 @@ console.log('=== M4 PRODUCTION QA SUITE ===\n');
   const html = read('index.html');
   const app = read('js/app.js');
 
-  if (sw.includes("CACHE_NAME = 'leftover-chef-v5'")) pass('Service worker cache is leftover-chef-v5');
-  else fail('Service worker CACHE_NAME is not leftover-chef-v5');
+  if (sw.includes("CACHE_NAME = 'leftover-chef-v7'")) pass('Service worker cache is leftover-chef-v7');
+  else fail('Service worker CACHE_NAME is not leftover-chef-v7');
 
   const requiredAssets = [
     './', './index.html', './css/styles.css', './js/recipes.js', './js/scanner.js',
-    './js/app.js', './icon.svg', './manifest.json'
+    './js/gemini-scan.js', './js/app.js', './icon.svg', './manifest.json'
   ];
   const missingAssets = requiredAssets.filter((a) => !sw.includes(`'${a}'`));
   if (missingAssets.length === 0) pass('Service worker precaches core app shell assets');
@@ -107,6 +107,7 @@ console.log('=== M4 PRODUCTION QA SUITE ===\n');
 // --------------------------------------------------------------------------
 {
   const html = read('index.html');
+  const geminiJs = read('js/gemini-scan.js');
   const recipesJs = read('js/recipes.js');
   const scannerJs = read('js/scanner.js');
   const appJs = read('js/app.js');
@@ -140,6 +141,7 @@ console.log('=== M4 PRODUCTION QA SUITE ===\n');
   window.localStorage.setItem('leftover_chef_bookmarks', '123');
   window.localStorage.setItem('leftoverchef_roadmap_votes', '"nope"');
 
+  window.eval(geminiJs);
   window.eval(recipesJs);
   window.eval(scannerJs);
   window.eval(appJs);
@@ -200,7 +202,8 @@ async function httpSmoke() {
 
   const paths = [
     '/', '/index.html', '/css/styles.css', '/js/app.js', '/js/recipes.js',
-    '/js/scanner.js', '/service-worker.js', '/manifest.json', '/icon.svg', '/ROADMAP.md'
+    '/js/scanner.js', '/js/gemini-scan.js', '/service-worker.js', '/manifest.json', '/icon.svg', '/ROADMAP.md',
+    '/api/gemini-status'
   ];
 
   for (const p of paths) {
