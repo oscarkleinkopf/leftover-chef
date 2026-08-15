@@ -3,7 +3,7 @@
  * Offline-first file caching and request interceptor.
  */
 
-const CACHE_NAME = 'leftover-chef-v4';
+const CACHE_NAME = 'leftover-chef-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
