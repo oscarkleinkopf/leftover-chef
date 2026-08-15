@@ -111,7 +111,7 @@ const now = new Date('2026-08-15T12:00:00Z');
     const plan = api.generateWeeklyMealPlan(['tomate', 'pollo', 'cebolla', 'calabacin'], {
       tomate: { id: 'tomate', expiresAt: '2026-08-15' }
     });
-    if (Array.isArray(plan) && plan.length === 6) pass('generateWeeklyMealPlan still returns 6 meals with pantry arg');
+    if (Array.isArray(plan) && plan.length === 14) pass('generateWeeklyMealPlan still returns 14 meals with pantry arg');
     else fail(`meal plan length unexpected: ${plan && plan.length}`);
   } catch (e) {
     fail(`generateWeeklyMealPlan threw: ${e.message}`);

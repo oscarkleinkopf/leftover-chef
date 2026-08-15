@@ -2116,6 +2116,62 @@ input:checked + .slider:before {
   color: var(--text-muted);
 }
 
+.shopping-list-panel {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-secondary);
+}
+.shopping-list-header h3 {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.shopping-list-summary {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.shopping-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shopping-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  font-size: 13px;
+}
+.shopping-list .buy-qty {
+  font-weight: 700;
+  color: var(--neon-primary);
+  white-space: nowrap;
+}
+.shopping-list-covered {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.shopping-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.shopping-list-empty {
+  font-size: 13px;
+  color: var(--neon-primary);
+  padding: 8px 0 12px;
+}
+
 /* Kid Chef Family Mode Styles */
 .kid-mode-active {
   border-color: #f59e0b !important;
@@ -2403,7 +2459,7 @@ input:checked + .slider:before {
     color: #000 !important;
     font-family: sans-serif !important;
   }
-  .app-header, .ambient-glow, .scanner-card, .offline-card, .filters-card, .header-actions, .modal-header button, .modal-footer, .ingredients-export-actions, .cook-mode-overlay {
+  .app-header, .ambient-glow, .scanner-card, .offline-card, .filters-card, .header-actions, .modal-header button, .modal-footer, .ingredients-export-actions, .cook-mode-overlay, .shopping-list-actions {
     display: none !important;
   }
   .app-container, .app-main, .main-left, .main-right {
