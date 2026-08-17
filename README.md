@@ -7,7 +7,7 @@
 ## ✨ Características Premium
 
 ### 1. Escaneo Inteligente Multi-Foto 📸
-Sube una o varias fotos del interior de tu refrigerador, o abre la **cámara en vivo** y captura fotogramas. El escáner ejecuta una animación secuencial de láser en canvas y dibuja cajas de selección computacionales sobre los ingredientes detectados, agrupando los elementos encontrados en tiempo real. Con `GEMINI_API_KEY` en el servidor, el análisis sale por un proxy local y la clave no se pega en el navegador.
+Sube una o varias fotos del interior de tu refrigerador, o abre la **cámara en vivo** y captura fotogramas. El escáner mete lo detectado en la despensa (con fecha de caducidad si Gemini la lee en el envase) y **abre la receta que usa lo que caduca antes**. Con `GEMINI_API_KEY` en el servidor, el análisis sale por un proxy local y la clave no se pega en el navegador.
 
 ### 2. Distribución en Niveles (Varoma Stack) 🥘
 Visualiza exactamente dónde se cocinan los ingredientes en tu Thermomix. La app mapea de forma dinámica la distribución física en cuatro niveles:

@@ -763,6 +763,34 @@ a:hover {
   padding: 4px 8px;
   border-radius: 999px;
 }
+.scan-now-badge {
+  position: absolute;
+  left: 10px;
+  top: 12px;
+  background: rgba(16, 185, 129, 0.95);
+  color: #042f2e;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+.recipe-card-recommended {
+  border-color: var(--neon-primary);
+  box-shadow: 0 0 0 1px var(--neon-primary), 0 12px 32px rgba(16, 185, 129, 0.18);
+}
+.scan-recommend-note {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: var(--border-radius-sm);
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.scan-recommend-note.hidden {
+  display: none;
+}
 
 .expiring-ingredient {
   display: flex;

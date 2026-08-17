@@ -339,14 +339,16 @@ function calculateRecipeMatch(recipe, availableIds) {
   let score = 0;
   if (nonStapleReqs.length > 0) {
     score = Math.round((matchedNonStaple / nonStapleReqs.length) * 100);
-  } else {
+  } else if (reqIngs.length > 0) {
     // If only staples are in the recipe (rare), match rate on all items
     score = Math.round((matchedCount / reqIngs.length) * 100);
+  } else {
+    score = 0;
   }
 
   // Boost score slightly if they have optional ingredients!
   let extraMatches = 0;
-  recipe.optionalIngredients.forEach(opt => {
+  (recipe.optionalIngredients || []).forEach(opt => {
     if (availableSet.has(opt.id)) {
       extraMatches++;
     }
@@ -703,6 +705,200 @@ function generateWeeklyMealPlan(availableIds, pantry = {}) {
   return plan;
 }
 
+function normalizeIngredientToken(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+const INGREDIENT_ALIASES = {
+  zucchini: 'calabacin',
+  calabacines: 'calabacin',
+  courgette: 'calabacin',
+  chicken: 'pollo',
+  pechuga: 'pollo',
+  tomato: 'tomate',
+  tomates: 'tomate',
+  tomatoes: 'tomate',
+  carrot: 'zanahoria',
+  zanahorias: 'zanahoria',
+  onion: 'cebolla',
+  cebollas: 'cebolla',
+  mushroom: 'champiñon',
+  mushrooms: 'champiñon',
+  champinon: 'champiñon',
+  champinones: 'champiñon',
+  setas: 'champiñon',
+  spinach: 'espinacas',
+  egg: 'huevo',
+  eggs: 'huevo',
+  huevos: 'huevo',
+  potato: 'patata',
+  potatoes: 'patata',
+  patatas: 'patata',
+  garlic: 'ajo',
+  oil: 'aceite',
+  olive_oil: 'aceite'
+};
+
+function resolveIngredientId(raw, database = INGREDIENT_DATABASE) {
+  if (raw == null) return null;
+  const original = String(raw).trim();
+  if (!original) return null;
+  const token = normalizeIngredientToken(original);
+  if (!token) return null;
+
+  const alias = INGREDIENT_ALIASES[token];
+  if (alias && database.some((item) => item.id === alias)) return alias;
+
+  const exactId = database.find((item) => item.id === original || item.id === token);
+  if (exactId) return exactId.id;
+
+  const normalizedId = database.find((item) => normalizeIngredientToken(item.id) === token);
+  if (normalizedId) return normalizedId.id;
+
+  const exactName = database.find((item) => normalizeIngredientToken(item.name) === token);
+  if (exactName) return exactName.id;
+
+  return null;
+}
+
+function normalizeIsoDate(value, now = new Date()) {
+  if (value == null || value === '') return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const d = toDateOnly(value);
+    if (!d) return null;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  const raw = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return toDateOnly(raw) ? raw : null;
+  }
+  const european = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  if (european) {
+    const day = european[1].padStart(2, '0');
+    const month = european[2].padStart(2, '0');
+    let year = european[3];
+    if (year.length === 2) year = `20${year}`;
+    const iso = `${year}-${month}-${day}`;
+    return toDateOnly(iso) ? iso : null;
+  }
+  const parsed = toDateOnly(raw);
+  if (!parsed) return null;
+  return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+}
+
+function pickSoonerExpiry(a, b, now = new Date()) {
+  const da = daysUntilExpiry(a, now);
+  const db = daysUntilExpiry(b, now);
+  if (da === null) return b || null;
+  if (db === null) return a || null;
+  return da <= db ? a : b;
+}
+
+function normalizeDetectedPantry(payload = {}, now = new Date()) {
+  const itemsById = {};
+  const unknown = [];
+
+  function upsert(rawId, extra = {}) {
+    const id = resolveIngredientId(rawId);
+    if (!id) {
+      if (rawId) unknown.push(String(rawId).trim());
+      return;
+    }
+    const prev = itemsById[id] || { id, grams: null, expiresAt: null };
+    const incomingDate = normalizeIsoDate(extra.expiresAt, now);
+    const gramsRaw = extra.grams != null && extra.grams !== '' ? Number(extra.grams) : NaN;
+    itemsById[id] = {
+      id,
+      grams: Number.isFinite(gramsRaw) ? gramsRaw : prev.grams,
+      expiresAt: incomingDate || prev.expiresAt
+    };
+  }
+
+  (Array.isArray(payload.detectedPantry) ? payload.detectedPantry : []).forEach((row) => {
+    if (!row) return;
+    upsert(row.id || row.name, row);
+  });
+  (Array.isArray(payload.detectedIngredients) ? payload.detectedIngredients : []).forEach((id) => upsert(id));
+
+  return { items: Object.values(itemsById), unknown };
+}
+
+function mergeScanIntoPantry(pantry = {}, detections = [], now = new Date()) {
+  const next = { ...pantry };
+  detections.forEach((det) => {
+    const id = resolveIngredientId(det && det.id);
+    if (!id) return;
+    const prev = next[id];
+    const incomingDate = normalizeIsoDate(det.expiresAt, now);
+    const fallback = (prev && prev.expiresAt) || defaultExpiryDate(id, now);
+    const gramsRaw = det.grams != null && det.grams !== '' ? Number(det.grams) : NaN;
+    next[id] = {
+      id,
+      grams: Number.isFinite(gramsRaw) ? gramsRaw : (prev && prev.grams != null ? prev.grams : null),
+      addedAt: (prev && prev.addedAt) || now.toISOString(),
+      expiresAt: incomingDate ? pickSoonerExpiry(prev && prev.expiresAt, incomingDate, now) : fallback
+    };
+  });
+  return next;
+}
+
+function resolveRecipeIngredientIds(recipe) {
+  if (!recipe || typeof recipe !== 'object') return recipe;
+  const mapList = (list) => (Array.isArray(list) ? list : []).map((row) => {
+    if (!row) return row;
+    const resolved = resolveIngredientId(row.id || row.name);
+    return resolved ? { ...row, id: resolved } : row;
+  });
+  return {
+    ...recipe,
+    requiredIngredients: mapList(recipe.requiredIngredients),
+    optionalIngredients: mapList(recipe.optionalIngredients),
+    detectedIngredients: (Array.isArray(recipe.detectedIngredients) ? recipe.detectedIngredients : [])
+      .map((id) => resolveIngredientId(id) || id)
+      .filter(Boolean)
+  };
+}
+
+function pickUrgentRecipe(availableIds, pantry = {}, dietFilters = [], extraRecipes = [], now = new Date()) {
+  const ranked = findMatchingRecipes(availableIds, pantry, dietFilters, now).slice();
+  extraRecipes.filter(Boolean).forEach((recipe) => {
+    const normalized = resolveRecipeIngredientIds(recipe);
+    let match = calculateRecipeMatch(normalized, availableIds);
+    match = applyPantryUrgency(match, normalized, pantry, now);
+    ranked.push({ recipe: normalized, match });
+  });
+  ranked.sort((a, b) => {
+    if ((b.match.urgencyBoost || 0) !== (a.match.urgencyBoost || 0)) {
+      return (b.match.urgencyBoost || 0) - (a.match.urgencyBoost || 0);
+    }
+    return (b.match.score || 0) - (a.match.score || 0);
+  });
+  return ranked[0] || null;
+}
+
+function describeScanRecommendation(picked, pantry = {}, now = new Date()) {
+  if (!picked || !picked.recipe) return '';
+  const ids = picked.match && Array.isArray(picked.match.urgentIngredientIds)
+    ? picked.match.urgentIngredientIds
+    : [];
+  const names = ids.map((id) => {
+    const dbItem = INGREDIENT_DATABASE.find((item) => item.id === id);
+    const status = pantry[id] ? getExpiryStatus(pantry[id].expiresAt, now) : null;
+    const name = dbItem ? dbItem.name : id;
+    if (status && status.label) return `${name} (${status.label})`;
+    return name;
+  });
+  if (names.length > 0) {
+    return `Tras el escaneo te recomendamos este plato porque usa ${names.join(', ')}.`;
+  }
+  return 'Tras el escaneo, esta es la receta que mejor encaja con lo que hay en la nevera.';
+}
+
 // Exports for modular frontend usage
 window.INGREDIENT_DATABASE = INGREDIENT_DATABASE;
 window.CATEGORIES = CATEGORIES;
@@ -717,3 +913,12 @@ window.defaultExpiryDate = defaultExpiryDate;
 window.applyPantryUrgency = applyPantryUrgency;
 window.findMatchingRecipes = findMatchingRecipes;
 window.listExpiringPantryItems = listExpiringPantryItems;
+window.normalizeIngredientToken = normalizeIngredientToken;
+window.resolveIngredientId = resolveIngredientId;
+window.normalizeIsoDate = normalizeIsoDate;
+window.pickSoonerExpiry = pickSoonerExpiry;
+window.normalizeDetectedPantry = normalizeDetectedPantry;
+window.mergeScanIntoPantry = mergeScanIntoPantry;
+window.resolveRecipeIngredientIds = resolveRecipeIngredientIds;
+window.pickUrgentRecipe = pickUrgentRecipe;
+window.describeScanRecommendation = describeScanRecommendation;

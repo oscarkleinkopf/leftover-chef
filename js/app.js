@@ -84,7 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     ],
     roadmapVotes: {},
-    geminiProxyConfigured: false
+    geminiProxyConfigured: false,
+    scanRecommendation: null
   };
 
   // Instantiate Photo Scanner
@@ -171,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnBookmarkRecipe: document.getElementById('btn-bookmark-recipe'),
     detailTitle: document.getElementById('detail-title'),
     detailSubtitle: document.getElementById('detail-subtitle'),
+    scanRecommendNote: document.getElementById('scan-recommend-note'),
     detailImage: document.getElementById('detail-image'),
     detailTime: document.getElementById('detail-time'),
     detailPortions: document.getElementById('detail-portions'),
@@ -515,6 +517,60 @@ document.addEventListener('DOMContentLoaded', () => {
     updateIngredientsUI();
   }
 
+  function addUnknownScanIngredient(name) {
+    const text = String(name || '').trim();
+    if (!text) return null;
+    const customId = 'custom_' + text.toLowerCase().replace(/\s+/g, '_');
+    if (!state.customIngredients.some((c) => c.id === customId)) {
+      state.customIngredients.push({ id: customId, name: text });
+    }
+    if (!window.INGREDIENT_DATABASE.some((item) => item.id === customId)) {
+      window.INGREDIENT_DATABASE.push({
+        id: customId,
+        name: text,
+        category: 'pantry',
+        kcal: 50, protein: 1, carbs: 10, fat: 0.5,
+        shelfDays: 7
+      });
+    }
+    return customId;
+  }
+
+  function applyFridgeScan(payload = {}) {
+    const generated = payload.generatedRecipe
+      ? window.resolveRecipeIngredientIds(payload.generatedRecipe)
+      : null;
+    const detected = window.normalizeDetectedPantry({
+      detectedIngredients: payload.detectedIngredients || (generated && generated.detectedIngredients) || [],
+      detectedPantry: payload.detectedPantry || (generated && generated.detectedPantry) || []
+    });
+    detected.unknown.forEach((name) => {
+      const id = addUnknownScanIngredient(name);
+      if (id) detected.items.push({ id, grams: null, expiresAt: null });
+    });
+    state.pantry = window.mergeScanIntoPantry(state.pantry, detected.items, new Date());
+    detected.items.forEach((item) => state.activeIngredients.add(item.id));
+
+    const extra = generated ? [{ ...generated, source: 'gemini' }] : [];
+    const picked = window.pickUrgentRecipe(
+      Array.from(state.activeIngredients),
+      state.pantry,
+      Array.from(state.selectedDietFilters),
+      extra
+    );
+    state.scanRecommendation = picked
+      ? {
+          recipeId: picked.recipe.id,
+          reason: window.describeScanRecommendation(picked, state.pantry)
+        }
+      : null;
+
+    updateIngredientsUI();
+    if (picked) {
+      openRecipeDetail(picked.recipe, picked.match.score);
+    }
+  }
+
   function sortedPantryIds() {
     return Object.keys(state.pantry).sort((a, b) => {
       const aDays = window.daysUntilExpiry(state.pantry[a].expiresAt);
@@ -775,18 +831,14 @@ document.addEventListener('DOMContentLoaded', () => {
           scanner.statusText.innerText = progressMessage;
         },
         (recipeData) => {
-          // Success! Inject generated recipe into the feed and open detail immediately!
           scanner.stopScanAnimation();
           el.btnStartScan.disabled = false;
           el.btnCancelScan.disabled = false;
-          
-          // Add newly identified ingredients to active state
-          if (recipeData.detectedIngredients) {
-            recipeData.detectedIngredients.forEach(id => addIngredientToState(id));
-          }
-          
-          // Display the recipe details directly
-          openRecipeDetail(recipeData, 100);
+          applyFridgeScan({
+            detectedIngredients: recipeData.detectedIngredients,
+            detectedPantry: recipeData.detectedPantry,
+            generatedRecipe: recipeData
+          });
           scanner.clearAll();
         },
         (errorMessage) => {
@@ -799,7 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
           
           // Trigger backup simulator scanning animation again to complete experience
           scanner.startScanAnimation((scannedIds) => {
-            scannedIds.forEach(id => addIngredientToState(id));
+            applyFridgeScan({ detectedIngredients: scannedIds });
             scanner.clearAll();
           });
         },
@@ -814,9 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
       scanner.startScanAnimation((scannedIds) => {
         el.btnStartScan.disabled = false;
         el.btnCancelScan.disabled = false;
-        
-        // Add scanned items to state
-        scannedIds.forEach(id => addIngredientToState(id));
+        applyFridgeScan({ detectedIngredients: scannedIds });
         scanner.clearAll();
       });
     }
@@ -903,6 +953,10 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const card = document.createElement('div');
       card.className = 'card glass recipe-card';
+      if (rec.id) card.dataset.recipeId = rec.id;
+      if (state.scanRecommendation && rec.id === state.scanRecommendation.recipeId) {
+        card.classList.add('recipe-card-recommended');
+      }
       
       // Cover Image
       const imgWrapper = document.createElement('div');
@@ -924,6 +978,12 @@ document.addEventListener('DOMContentLoaded', () => {
         urgencyBadge.className = 'urgency-use-badge';
         urgencyBadge.innerText = `🔥 Usa ${urgentIds.length} que caduca${urgentIds.length === 1 ? '' : 'n'}`;
         imgWrapper.appendChild(urgencyBadge);
+      }
+      if (state.scanRecommendation && rec.id === state.scanRecommendation.recipeId) {
+        const nowBadge = document.createElement('div');
+        nowBadge.className = 'scan-now-badge';
+        nowBadge.innerText = 'Cocina ahora';
+        imgWrapper.appendChild(nowBadge);
       }
       
       card.appendChild(imgWrapper);
@@ -987,8 +1047,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const basePortions = recipe.portions || 4;
     const scaleFactor = state.portions / basePortions;
 
-    el.detailTitle.innerText = recipe.title;
-    el.detailSubtitle.innerText = recipe.subtitle;
+    el.detailTitle.textContent = recipe.title;
+    el.detailSubtitle.textContent = recipe.subtitle;
+    if (el.scanRecommendNote) {
+      const rec = state.scanRecommendation;
+      if (rec && recipe && rec.recipeId === recipe.id && rec.reason) {
+        el.scanRecommendNote.textContent = rec.reason;
+        el.scanRecommendNote.classList.remove('hidden');
+      } else {
+        el.scanRecommendNote.textContent = '';
+        el.scanRecommendNote.classList.add('hidden');
+      }
+    }
     el.detailImage.src = recipe.image;
     el.detailTime.innerText = `${recipe.prepTime} min`;
     el.detailPortions.innerText = `${state.portions} raciones`;
@@ -997,7 +1067,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Diet tags
     el.detailDietTags.innerHTML = '';
-    recipe.diet.forEach(tag => {
+    (recipe.diet || []).forEach(tag => {
       const badge = document.createElement('span');
       badge.className = 'badge badge-neon';
       badge.style.marginRight = '6px';
@@ -2172,6 +2242,10 @@ document.addEventListener('DOMContentLoaded', () => {
   probeGeminiProxy();
   renderOfflineAccordion();
   updateIngredientsUI(); // Trigger initial recipes list state (empty warning)
+
+  window.addEventListener('leftover-scan-complete', (e) => {
+    applyFridgeScan((e && e.detail) || {});
+  });
 
   // Register PWA Service Worker
   if ('serviceWorker' in navigator) {
