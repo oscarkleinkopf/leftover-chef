@@ -1047,8 +1047,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const basePortions = recipe.portions || 4;
     const scaleFactor = state.portions / basePortions;
 
-    el.detailTitle.innerText = recipe.title;
-    el.detailSubtitle.innerText = recipe.subtitle;
+    el.detailTitle.textContent = recipe.title;
+    el.detailSubtitle.textContent = recipe.subtitle;
     if (el.scanRecommendNote) {
       const rec = state.scanRecommendation;
       if (rec && recipe && rec.recipeId === recipe.id && rec.reason) {
