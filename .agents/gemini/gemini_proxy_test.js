@@ -111,7 +111,7 @@ console.log('=== GEMINI PROXY + LIVE CAMERA SUITE ===\n');
 
 {
   const sw = read('service-worker.js');
-  if (sw.includes("CACHE_NAME = 'leftover-chef-v7'") && sw.includes('./js/gemini-scan.js') && sw.includes('/api/')) {
+  if (sw.includes("CACHE_NAME = 'leftover-chef-v8'") && sw.includes('./js/gemini-scan.js') && sw.includes('/api/')) {
     pass('Service worker v7 precaches gemini-scan.js and skips /api/');
   } else {
     fail('Service worker missing v7 / gemini-scan.js / API bypass');

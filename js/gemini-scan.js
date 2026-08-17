@@ -29,9 +29,14 @@
     return `Actúa como un chef experto con estrellas Michelin y especialista en cocina de Thermomix (modelos TM5 y TM6, objetivo ${model}).
 Analiza detalladamente las fotos provistas del interior del refrigerador.
 Identifica todos los ingredientes visibles (vegetales, carnes, lácteos, salsas, etc.).
+Si ves fechas de caducidad o consumo preferente en envases (CAD, C.P., DD/MM/AAAA), recógelas.
+Si puedes estimar gramos a la vista, anótalos.
 
 Tu tarea es crear una receta espectacular y detallada para preparar en Thermomix basándote principalmente en estos ingredientes encontrados.
+PRIORIZA usar primero los ingredientes que caducan antes.
 Puedes dar por hecho que el usuario cuenta en su despensa con condimentos básicos o indispensables: aceite de oliva, ajo, cebolla, sal, pimienta, harina y agua.
+
+Usa estos ids de catálogo cuando el ingrediente coincida: cebolla, ajo, tomate, zanahoria, calabacin, pimiento, patata, champiñon, brocoli, espinacas, calabaza, pollo, ternera, cerdo, salmon, gambas, tofu, garbanzos, lentejas, leche, queso_rallado, huevo, mantequilla, nata, yogur, aceite, arroz, pasta, tomate_triturado, caldo, harina, sal, pimienta.
 
 La receta generada DEBE ser 100% compatible con los modelos TM5 y TM6.
 Elige un título sugerente y un subtítulo moderno.
@@ -54,7 +59,8 @@ Escribe los pasos de preparación paso a paso. Para CADA paso obligatoriamente d
 - timer: Un entero opcional que indique los segundos que debe contar el temporizador integrado para ese paso en caso de aplicar (e.g., 5 minutos = 300).
 
 DEBES responder ÚNICAMENTE con un objeto JSON válido que siga exactamente la siguiente estructura sin rodeos, sin bloques markdown de código triples, solo el string JSON:
-{"detectedIngredients":["zanahoria","cebolla","pollo"],"title":"Título de la Receta","subtitle":"Subtítulo ameno","prepTime":30,"portions":3,"diet":["vegetarian","gluten-free"],"difficulty":"Fácil","requiredIngredients":[{"id":"zanahoria","amount":150,"display":"150g de Zanahoria cortada en rodajas"}],"optionalIngredients":[{"id":"pimienta","display":"Pimienta negra recién molida al gusto"}],"nutrition":{"kcal":380,"protein":12,"carbs":55,"fat":14},"steps":[{"step":1,"text":"Poner la cebolla y el ajo en el vaso y picar.","tmSettings":{"time":"5 seg","temp":"Sin temp","speed":"5","reverse":false,"accessory":"Cuchilla"},"speechText":"Paso 1. Añade la cebolla y el ajo en el vaso. Cierra la tapa y pica cinco segundos a velocidad cinco.","timer":5}]}`;
+{"detectedIngredients":["zanahoria","cebolla","pollo"],"detectedPantry":[{"id":"pollo","grams":400,"expiresAt":"2026-08-16"}],"title":"Título de la Receta","subtitle":"Subtítulo ameno","prepTime":30,"portions":3,"diet":["vegetarian","gluten-free"],"difficulty":"Fácil","requiredIngredients":[{"id":"zanahoria","amount":150,"display":"150g de Zanahoria cortada en rodajas"}],"optionalIngredients":[{"id":"pimienta","display":"Pimienta negra recién molida al gusto"}],"nutrition":{"kcal":380,"protein":12,"carbs":55,"fat":14},"steps":[{"step":1,"text":"Poner la cebolla y el ajo en el vaso y picar.","tmSettings":{"time":"5 seg","temp":"Sin temp","speed":"5","reverse":false,"accessory":"Cuchilla"},"speechText":"Paso 1. Añade la cebolla y el ajo en el vaso. Cierra la tapa y pica cinco segundos a velocidad cinco.","timer":5}]}
+detectedPantry es opcional: incluye id del catálogo, grams si los estimas y expiresAt en YYYY-MM-DD solo si leíste una fecha real en la foto.`;
   }
 
   function normalizeImages(images) {
