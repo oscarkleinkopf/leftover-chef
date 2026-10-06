@@ -81,3 +81,7 @@ GITHUB_TOKEN=tu_token_aqui
 GITHUB_USER=tu_usuario
 GITHUB_REPO=leftover-chef
 ```
+
+## Licencia
+
+Código bajo licencia [MIT](LICENSE). Copyright (c) 2026 Osias Kleinkopf.
